@@ -2,8 +2,39 @@
 
 import { Activity, Zap, DollarSign, HeartPulse, TrendingUp, TrendingDown, AlertTriangle, MapPin } from 'lucide-react';
 import { EnergyBarChart, PerformanceBarChart } from '../ChartComponents';
+import dynamic from 'next/dynamic';
+import { useState } from 'react';
+
+const MapComponent = dynamic(() => import('./MapComponent'), {
+    ssr: false,
+    loading: () => <div className="h-full w-full bg-neutral-100 animate-pulse flex items-center justify-center text-neutral-400">Loading Map...</div>
+});
+
+interface Station {
+    id: number;
+    name: string;
+    status: 'Available' | 'In Use' | 'Warning' | 'Offline';
+    count: number;
+    address: string;
+    distance: string;
+    color: 'success' | 'brand' | 'warning' | 'danger';
+    position: [number, number];
+    chargers: number;
+    power: string;
+    price: string;
+    lastUpdate: string;
+}
 
 export default function Overview() {
+    const [selectedStation, setSelectedStation] = useState<Station | null>(null);
+
+    const overviewStations: Station[] = [
+        { id: 1, name: 'Congress Center', status: 'Available', count: 4, address: '1800 E Jackson Ave, Milwaukee', distance: '0.3 mi', color: 'success', position: [43.0389, -87.9065], chargers: 8, power: '150 kW', price: '$0.35/kWh', lastUpdate: '2 min ago' },
+        { id: 2, name: 'Public Market', status: 'In Use', count: 2, address: '400 N Water St, Milwaukee', distance: '0.5 mi', color: 'brand', position: [43.0352, -87.9092], chargers: 6, power: '150 kW', price: '$0.32/kWh', lastUpdate: '1 min ago' },
+        { id: 3, name: 'Downtown Plaza', status: 'Warning', count: 3, address: '123 Main St, Milwaukee', distance: '0.7 mi', color: 'warning', position: [43.0412, -87.9105], chargers: 4, power: '100 kW', price: '$0.30/kWh', lastUpdate: '3 min ago' },
+        { id: 4, name: 'East Side Hub', status: 'Offline', count: 1, address: '567 East Blvd, Milwaukee', distance: '1.2 mi', color: 'danger', position: [43.0525, -87.8890], chargers: 6, power: '150 kW', price: '$0.33/kWh', lastUpdate: '15 min ago' },
+        { id: 5, name: 'Lakefront Station', status: 'Available', count: 5, address: '890 Lakefront Dr, Milwaukee', distance: '1.5 mi', color: 'success', position: [43.0375, -87.8965], chargers: 10, power: '350 kW', price: '$0.38/kWh', lastUpdate: 'Just now' },
+    ];
     return (
         <div className="dashboard-view">
             {/* Alert Banner */}
@@ -123,23 +154,12 @@ export default function Overview() {
                             <button className="px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 rounded-lg whitespace-nowrap">Offline</button>
                         </div>
                     </div>
-                    <div className="h-80 bg-neutral-100 relative">
-                        {/* Map placeholder */}
-                        <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="text-center">
-                                <div className="w-16 h-16 rounded-full bg-brand-100 flex items-center justify-center mx-auto mb-3 map-pulse">
-                                    <MapPin className="w-8 h-8 text-brand-500" />
-                                </div>
-                                <p className="text-neutral-500">Interactive Map View</p>
-                                <p className="text-sm text-neutral-400">Showing 40 stations across Milwaukee</p>
-                            </div>
-                        </div>
-                        {/* Station markers simulation */}
-                        <div className="absolute top-16 left-20 w-8 h-8 rounded-full bg-success-500 border-4 border-white shadow-lg flex items-center justify-center text-white text-xs font-bold cursor-pointer hover:scale-110 transition-transform">4</div>
-                        <div className="absolute top-32 left-48 w-8 h-8 rounded-full bg-success-500 border-4 border-white shadow-lg flex items-center justify-center text-white text-xs font-bold cursor-pointer hover:scale-110 transition-transform">2</div>
-                        <div className="absolute top-24 right-32 w-8 h-8 rounded-full bg-warning-500 border-4 border-white shadow-lg flex items-center justify-center text-white text-xs font-bold cursor-pointer hover:scale-110 transition-transform">3</div>
-                        <div className="absolute bottom-20 left-32 w-8 h-8 rounded-full bg-danger-500 border-4 border-white shadow-lg flex items-center justify-center text-white text-xs font-bold cursor-pointer hover:scale-110 transition-transform status-pulse">1</div>
-                        <div className="absolute bottom-32 right-20 w-8 h-8 rounded-full bg-success-500 border-4 border-white shadow-lg flex items-center justify-center text-white text-xs font-bold cursor-pointer hover:scale-110 transition-transform">5</div>
+                    <div className="h-80 relative">
+                        <MapComponent
+                            stations={overviewStations}
+                            selectedStation={selectedStation}
+                            onStationClick={setSelectedStation}
+                        />
                     </div>
                     {/* Legend */}
                     <div className="p-3 sm:p-4 border-t border-neutral-100 flex flex-wrap items-center gap-3 sm:gap-6">

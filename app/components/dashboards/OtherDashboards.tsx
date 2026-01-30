@@ -1,57 +1,118 @@
 'use client';
 
 import { RevenueLineChart, EnergyBarChart, StackedBarChart, TrendLineChart } from '../ChartComponents';
-import { TrendingUp } from 'lucide-react';
+import { TrendingUp, DollarSign, Receipt, User, Percent, ArrowUpRight, ChevronRight } from 'lucide-react';
+import { useState } from 'react';
 
 // Revenue Dashboard with interactive charts
 export function Revenue() {
+    const [activeTab, setActiveTab] = useState('Revenue');
+
     const revenueData = [
-        { date: 'Jan 22', revenue: 1450 },
-        { date: 'Jan 23', revenue: 1680 },
-        { date: 'Jan 24', revenue: 1520 },
-        { date: 'Jan 25', revenue: 1890 },
-        { date: 'Jan 26', revenue: 1750 },
-        { date: 'Jan 27', revenue: 2100 },
-        { date: 'Jan 28', revenue: 1920 },
+        { date: 'Week 1', revenue: 12000 },
+        { date: 'Week 2', revenue: 15400 },
+        { date: 'Week 3', revenue: 11800 },
+        { date: 'Week 4', revenue: 8692 },
     ];
 
     const revenueByStationData = [
-        { name: 'Congress Center', sessions: 342, revenue: 8450 },
-        { name: 'Public Market', sessions: 298, revenue: 7200 },
-        { name: 'Downtown Plaza', sessions: 256, revenue: 6800 },
-        { name: 'East Side Hub', sessions: 201, revenue: 5100 },
-        { name: 'Lakefront', sessions: 187, revenue: 4650 },
+        { name: 'Congress Center', revenue: '$12,450' },
+        { name: 'Public Market', revenue: '$10,890' },
+        { name: 'Downtown Plaza', revenue: '$8,765' },
+        { name: 'East Side Hub', revenue: '$7,234' },
+        { name: 'Lakefront Station', revenue: '$6,553' },
+    ];
+
+    const stats = [
+        { label: 'Total Revenue (MTD)', value: '$47,892', trend: '+18%', icon: DollarSign, color: 'emerald' },
+        { label: 'Total Transactions', value: '2,847', trend: '+24%', icon: Receipt, color: 'blue' },
+        { label: 'Avg. Transaction Value', value: '$16.82', trend: '+9%', icon: User, color: 'brand' },
+        { label: 'Profit Margin', value: '32%', trend: '+5%', icon: Percent, color: 'amber' },
     ];
 
     return (
         <div className="dashboard-view">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-                {[
-                    { label: 'Total Revenue (MTD)', value: '$47,892', trend: '+18%' },
-                    { label: 'Total Transactions', value: '2,847', trend: '+24%' },
-                    { label: 'Avg. Transaction Value', value: '$16.82', trend: '+9%' },
-                    { label: 'Profit Margin', value: '32%', trend: '+5%' },
-                ].map((stat, idx) => (
-                    <div key={idx} className="bg-white rounded-xl p-5 border border-neutral-200 card-hover">
-                        <p className="text-2xl font-bold">{stat.value}</p>
-                        <p className="text-neutral-500 text-sm">{stat.label}</p>
-                        <span className="text-success-600 text-sm font-medium">{stat.trend}</span>
+            {/* KPI Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                {stats.map((stat, idx) => (
+                    <div key={idx} className="bg-white rounded-2xl p-6 border border-neutral-100 shadow-sm hover:shadow-md transition-shadow">
+                        <div className="flex items-center justify-between mb-4">
+                            <div className={`w-12 h-12 rounded-xl bg-${stat.color === 'brand' ? 'brand' : stat.color}-50 flex items-center justify-center`}>
+                                <stat.icon className={`w-6 h-6 text-${stat.color === 'brand' ? 'brand' : stat.color}-500`} />
+                            </div>
+                            <div className="flex items-center gap-1 text-success-600 text-sm font-semibold">
+                                <TrendingUp className="w-4 h-4" />
+                                {stat.trend}
+                            </div>
+                        </div>
+                        <div>
+                            <p className="text-3xl font-bold text-neutral-900 mb-1">{stat.value}</p>
+                            <p className="text-neutral-500 text-sm">{stat.label}</p>
+                        </div>
                     </div>
                 ))}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                <div className="bg-white rounded-xl border border-neutral-200 p-5">
-                    <h3 className="text-lg font-semibold mb-4">Revenue Trend (Last 7 Days)</h3>
-                    <RevenueLineChart data={revenueData} height={300} />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Main Revenue Chart Area */}
+                <div className="lg:col-span-2 bg-white rounded-2xl border border-neutral-100 shadow-sm p-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+                        <h3 className="text-lg font-bold text-neutral-800">Revenue Overview</h3>
+                        <div className="flex bg-neutral-100 p-1 rounded-xl">
+                            {['Revenue', 'Costs', 'Profit'].map((tab) => (
+                                <button
+                                    key={tab}
+                                    onClick={() => setActiveTab(tab)}
+                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === tab
+                                            ? 'bg-white text-brand-600 shadow-sm'
+                                            : 'text-neutral-500 hover:text-neutral-700'
+                                        }`}
+                                >
+                                    {tab}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="h-[400px] w-full flex flex-col justify-end">
+                        <RevenueLineChart data={revenueData} height={350} />
+                        <div className="flex justify-between px-10 mt-4 text-sm text-neutral-400 font-medium">
+                            <span>Week 1</span>
+                            <span>Week 2</span>
+                            <span>Week 3</span>
+                            <span>Week 4</span>
+                        </div>
+                    </div>
                 </div>
 
-                <div className="bg-white rounded-xl border border-neutral-200 p-5">
-                    <h3 className="text-lg font-semibold mb-4">Revenue by Station</h3>
-                    <EnergyBarChart
-                        data={revenueByStationData.map(d => ({ day: d.name.split(' ')[0], kwh: d.revenue }))}
-                        height={300}
-                    />
+                {/* Sidebar: Revenue by Station */}
+                <div className="bg-white rounded-2xl border border-neutral-100 shadow-sm p-6">
+                    <div className="flex items-center justify-between mb-6">
+                        <h3 className="text-lg font-bold text-neutral-800">Revenue by Station</h3>
+                    </div>
+
+                    <div className="space-y-1">
+                        {revenueByStationData.map((station, idx) => (
+                            <div
+                                key={idx}
+                                className="group flex items-center justify-between p-4 rounded-xl hover:bg-neutral-50 transition-colors cursor-pointer"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <span className="text-neutral-700 font-medium transition-colors group-hover:text-brand-600">
+                                        {station.name}
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <span className="text-neutral-900 font-bold">{station.revenue}</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <button className="w-full mt-6 py-3 border border-neutral-100 rounded-xl text-neutral-500 text-sm font-medium hover:bg-neutral-50 transition-colors flex items-center justify-center gap-2">
+                        View Detailed Report
+                        <ChevronRight className="w-4 h-4" />
+                    </button>
                 </div>
             </div>
         </div>
