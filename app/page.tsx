@@ -1,65 +1,123 @@
-import Image from "next/image";
+'use client';
+
+import { useState } from 'react';
+import Sidebar from './components/Sidebar';
+import Header from './components/Header';
+import Overview from './components/dashboards/Overview';
+import LiveMap from './components/dashboards/LiveMap';
+import Stations from './components/dashboards/Stations';
+import Chargers from './components/dashboards/Chargers';
+import Sessions from './components/dashboards/Sessions';
+import { Revenue, Energy, Reports, Diagnostics, Alerts, Users, Settings } from './components/dashboards/OtherDashboards';
 
 export default function Home() {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
-  );
+    const [currentRole, setCurrentRole] = useState('operator');
+    const [currentView, setCurrentView] = useState('overview');
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+
+    const titles: Record<string, [string, string]> = {
+        'overview': ['Operations Overview', 'Real-time monitoring and management'],
+        'map': ['Live Map', 'Geographic station view'],
+        'stations': ['Stations', 'Manage charging stations'],
+        'chargers': ['Chargers', 'Individual charger management'],
+        'sessions': ['Sessions', 'Active and historical sessions'],
+        'revenue': ['Revenue Analytics', 'Financial performance and insights'],
+        'energy': ['Energy Consumption', 'Power usage analytics'],
+        'reports': ['Reports', 'Generate and download reports'],
+        'diagnostics': ['Diagnostics', 'System health and troubleshooting'],
+        'alerts': ['Alerts', 'System notifications and warnings'],
+        'users': ['User Management', 'Manage platform users and roles'],
+        'settings': ['Settings', 'Platform configuration']
+    };
+
+    const handleRoleChange = (role: string) => {
+        setCurrentRole(role);
+        // Switch to appropriate default dashboard
+        if (role === 'owner') {
+            setCurrentView('revenue');
+        } else if (role === 'technician') {
+            setCurrentView('diagnostics');
+        } else if (role === 'admin') {
+            setCurrentView('users');
+        } else {
+            setCurrentView('overview');
+        }
+    };
+
+    const handleNavigate = (view: string) => {
+        setCurrentView(view);
+        // Close sidebar on mobile after navigation
+        if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+            setSidebarOpen(false);
+            document.body.classList.remove('overflow-hidden');
+        }
+    };
+
+    const toggleSidebar = () => {
+        setSidebarOpen(!sidebarOpen);
+        if (typeof window !== 'undefined') {
+            document.body.classList.toggle('overflow-hidden');
+        }
+    };
+
+    const closeSidebar = () => {
+        setSidebarOpen(false);
+        if (typeof window !== 'undefined') {
+            document.body.classList.remove('overflow-hidden');
+        }
+    };
+
+    const renderDashboard = () => {
+        switch (currentView) {
+            case 'overview': return <Overview />;
+            case 'map': return <LiveMap />;
+            case 'stations': return <Stations />;
+            case 'chargers': return <Chargers />;
+            case 'sessions': return <Sessions />;
+            case 'revenue': return <Revenue />;
+            case 'energy': return <Energy />;
+            case 'reports': return <Reports />;
+            case 'diagnostics': return <Diagnostics />;
+            case 'alerts': return <Alerts />;
+            case 'users': return <Users />;
+            case 'settings': return <Settings />;
+            default: return <Overview />;
+        }
+    };
+
+    return (
+        <>
+            {/* Mobile Sidebar Overlay */}
+            <div
+                id="sidebar-overlay"
+                className={sidebarOpen ? 'active' : ''}
+                onClick={closeSidebar}
+            ></div>
+
+            <div id="app" className="flex h-screen overflow-hidden">
+                <Sidebar
+                    currentRole={currentRole}
+                    onRoleChange={handleRoleChange}
+                    onNavigate={handleNavigate}
+                    currentView={currentView}
+                    onClose={closeSidebar}
+                    isOpen={sidebarOpen}
+                />
+
+                {/* Main Content Area */}
+                <div className="flex-1 flex flex-col overflow-hidden">
+                    <Header
+                        onMenuToggle={toggleSidebar}
+                        pageTitle={titles[currentView]?.[0] || 'Dashboard'}
+                        pageSubtitle={titles[currentView]?.[1] || ''}
+                    />
+
+                    {/* Dashboard Content */}
+                    <main className="flex-1 overflow-y-auto p-4 sm:p-6" id="mainContent">
+                        {renderDashboard()}
+                    </main>
+                </div>
+            </div>
+        </>
+    );
 }
