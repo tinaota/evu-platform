@@ -111,7 +111,7 @@ export default function Sessions() {
     count: history.filter(s => {
       const t = parseInt(s.startTime)
       return t >= h && t < h + 3
-    }).length || Math.floor(Math.random() * 10 + 5),
+    }).length,
   }))
   const maxSessions = Math.max(...sessionsByHour.map(s => s.count), 1)
 
