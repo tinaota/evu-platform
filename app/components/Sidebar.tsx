@@ -2,6 +2,7 @@
 
 import { Zap, LayoutDashboard, Map, Building2, PlugZap, Activity, DollarSign, BatteryCharging, FileBarChart, Wrench, AlertTriangle, Users, Settings, LogOut, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 interface SidebarProps {
@@ -15,6 +16,29 @@ interface SidebarProps {
 
 export default function Sidebar({ currentRole, onRoleChange, onNavigate, currentView, onClose, isOpen }: SidebarProps) {
     const router = useRouter();
+    const [userName, setUserName] = useState('');
+    const [userInitials, setUserInitials] = useState('?');
+
+    useEffect(() => {
+        const supabase = createClient();
+        supabase.auth.getUser().then(async ({ data: { user } }) => {
+            if (!user) return;
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('full_name')
+                .eq('id', user.id)
+                .single();
+            const name = profile?.full_name ?? user.email ?? 'User';
+            setUserName(name);
+            const initials = name
+                .split(/\s+/)
+                .filter(Boolean)
+                .slice(0, 2)
+                .map((w: string) => w[0].toUpperCase())
+                .join('');
+            setUserInitials(initials || name[0]?.toUpperCase() || '?');
+        });
+    }, []);
 
     const handleLogout = async () => {
         const supabase = createClient();
@@ -140,10 +164,10 @@ export default function Sidebar({ currentRole, onRoleChange, onNavigate, current
             <div className="p-4 border-t border-neutral-700">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-sm font-semibold">
-                        JD
+                        {userInitials}
                     </div>
                     <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">John Doe</p>
+                        <p className="text-sm font-medium truncate">{userName || 'Loading…'}</p>
                         <p className="text-xs text-neutral-400 truncate">{roleLabels[currentRole]}</p>
                     </div>
                     <button onClick={handleLogout} className="p-2 hover:bg-neutral-800 rounded-lg" title="Sign out">

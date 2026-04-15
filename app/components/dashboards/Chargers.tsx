@@ -4,6 +4,7 @@ import { PlugZap, BatteryCharging, AlertTriangle, MoreVertical } from 'lucide-re
 import { useState } from 'react';
 import { useChargers } from '@/lib/hooks/useChargers';
 import { useStations } from '@/lib/hooks/useStations';
+import EmptyState from '@/app/components/EmptyState';
 
 export default function Chargers() {
     const [selectedStationId, setSelectedStationId] = useState<string>('');
@@ -116,6 +117,15 @@ export default function Chargers() {
                     <div className="p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                         {loading && (
                             <div className="col-span-full text-center text-neutral-400 text-sm py-8">Loading chargers…</div>
+                        )}
+                        {!loading && chargers.length === 0 && (
+                            <div className="col-span-full">
+                                <EmptyState
+                                    icon={<PlugZap className="w-6 h-6 text-neutral-400" />}
+                                    title="No chargers found"
+                                    description={selectedStationId ? 'This station has no chargers yet.' : 'No chargers have been added to the network yet.'}
+                                />
+                            </div>
                         )}
                         {chargers.map((charger, idx) => {
                             const colors = getStatusColors(charger.status);

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Search, Layers, Maximize2, Minimize2, X, Zap, Clock, DollarSign, Navigation } from 'lucide-react';
+import { Search, Layers, Maximize2, Minimize2, X, Zap, Clock, DollarSign, Navigation, CheckCircle2, AlertTriangle, WifiOff } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useStations } from '@/lib/hooks/useStations';
 import type { Station } from '@/lib/types';
@@ -246,6 +246,13 @@ export default function LiveMap() {
                         {filteredStations.map((station) => {
                             const colors = getColorClasses(station.color);
                             const isSelected = selectedStation?.id === station.id;
+
+                            const StatusIcon =
+                                station.status === 'Available' ? CheckCircle2 :
+                                station.status === 'In Use' ? Zap :
+                                station.status === 'Warning' ? AlertTriangle :
+                                WifiOff;
+
                             return (
                                 <div
                                     key={station.id}
@@ -260,7 +267,10 @@ export default function LiveMap() {
                                     </div>
                                     <p className="text-xs text-neutral-500">{station.address}</p>
                                     <div className="flex items-center justify-between mt-2">
-                                        <span className={`text-xs ${colors.text} font-medium`}>{station.status}</span>
+                                        <span className={`flex items-center gap-1 text-xs ${colors.text} font-medium`}>
+                                            <StatusIcon className="w-3 h-3" aria-hidden="true" />
+                                            {station.status}
+                                        </span>
                                         <p className="text-xs font-medium text-brand-600">{station.power}</p>
                                     </div>
                                 </div>

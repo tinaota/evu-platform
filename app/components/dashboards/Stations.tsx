@@ -5,6 +5,8 @@ import { useState, useMemo } from 'react';
 import { useStations } from '@/lib/hooks/useStations';
 import type { Station } from '@/lib/types';
 import StationModal from '@/app/components/modals/StationModal';
+import { NoResultsEmptyState } from '@/app/components/EmptyState';
+import { stationCode } from '@/lib/utils';
 
 const PAGE_SIZE = 10;
 
@@ -32,6 +34,12 @@ export default function Stations() {
 
     const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
     const pageItems = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+
+    // Stable code map: station id → friendly code based on master order
+    const stationCodeMap = useMemo(() =>
+        Object.fromEntries(stations.map((s, i) => [s.id, stationCode(s.name, i)])),
+        [stations]
+    );
 
     const total = stations.length;
     const online = stations.filter(s => s.status !== 'Offline').length;
@@ -170,7 +178,14 @@ export default function Stations() {
                             )}
                             {!loading && pageItems.length === 0 && (
                                 <tr>
-                                    <td colSpan={7} className="px-4 py-8 text-center text-neutral-400 text-sm">No stations found</td>
+                                    <td colSpan={7}>
+                                        <NoResultsEmptyState
+                                            search={search}
+                                            filterActive={filterStatus !== 'All'}
+                                            onClearSearch={() => handleSearchChange('')}
+                                            onClearFilter={() => handleFilterClick('All')}
+                                        />
+                                    </td>
                                 </tr>
                             )}
                             {pageItems.map((station) => {
@@ -184,7 +199,7 @@ export default function Stations() {
                                                 </div>
                                                 <div>
                                                     <p className="font-medium text-sm">{station.name}</p>
-                                                    <p className="text-xs text-neutral-500 font-mono">{station.id.slice(0, 8)}…</p>
+                                                    <p className="text-xs text-neutral-500 font-mono">{stationCodeMap[station.id]}</p>
                                                 </div>
                                             </div>
                                         </td>
@@ -214,27 +229,31 @@ export default function Stations() {
                                                 <button
                                                     onClick={() => setModal({ mode: 'view', station })}
                                                     className="p-2 hover:bg-neutral-100 rounded-lg"
-                                                    title="View"
+                                                    title={`View ${station.name}`}
+                                                    aria-label={`View ${station.name}`}
                                                 >
-                                                    <Eye className="w-4 h-4 text-neutral-500" />
+                                                    <Eye className="w-4 h-4 text-neutral-500" aria-hidden="true" />
                                                 </button>
                                                 <button
                                                     onClick={() => setModal({ mode: 'edit', station })}
                                                     className="p-2 hover:bg-neutral-100 rounded-lg"
-                                                    title="Edit"
+                                                    title={isOffline ? `Diagnose ${station.name}` : `Edit ${station.name}`}
+                                                    aria-label={isOffline ? `Diagnose ${station.name}` : `Edit ${station.name}`}
                                                 >
                                                     {isOffline ? (
-                                                        <Wrench className="w-4 h-4 text-danger-500" />
+                                                        <Wrench className="w-4 h-4 text-danger-500" aria-hidden="true" />
                                                     ) : (
-                                                        <Edit className="w-4 h-4 text-neutral-500" />
+                                                        <Edit className="w-4 h-4 text-neutral-500" aria-hidden="true" />
                                                     )}
                                                 </button>
                                                 <button
                                                     onClick={() => setMenuOpen(menuOpen === station.id ? null : station.id)}
                                                     className="p-2 hover:bg-neutral-100 rounded-lg"
-                                                    title="More"
+                                                    title={`More options for ${station.name}`}
+                                                    aria-label={`More options for ${station.name}`}
+                                                    aria-expanded={menuOpen === station.id}
                                                 >
-                                                    <MoreVertical className="w-4 h-4 text-neutral-500" />
+                                                    <MoreVertical className="w-4 h-4 text-neutral-500" aria-hidden="true" />
                                                 </button>
                                                 {menuOpen === station.id && (
                                                     <div className="absolute right-0 top-full mt-1 w-36 bg-white rounded-lg shadow-lg border border-neutral-200 z-10">

@@ -135,7 +135,6 @@ export default function Home() {
                         onMenuToggle={toggleSidebar}
                         pageTitle={titles[currentView]?.[0] || 'Dashboard'}
                         pageSubtitle={titles[currentView]?.[1] || ''}
-                        onAddStation={() => handleNavigate('stations')}
                     />
 
                     {/* Dashboard Content */}

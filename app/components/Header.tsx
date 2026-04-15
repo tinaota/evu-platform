@@ -1,17 +1,17 @@
 'use client';
 
-import { Menu, Search, Calendar, Bell, Plus, ChevronDown, X, Zap, Clock } from 'lucide-react';
+import { Menu, Search, Calendar, Bell, ChevronDown, X, Zap, Clock } from 'lucide-react';
 import { useState } from 'react';
 import { useRealtimeSessions } from '@/lib/hooks/useRealtimeSessions';
+import { currentWeekLabel } from '@/lib/utils';
 
 interface HeaderProps {
     onMenuToggle: () => void;
     pageTitle: string;
     pageSubtitle: string;
-    onAddStation?: () => void;
 }
 
-export default function Header({ onMenuToggle, pageTitle, pageSubtitle, onAddStation }: HeaderProps) {
+export default function Header({ onMenuToggle, pageTitle, pageSubtitle }: HeaderProps) {
     const [notifOpen, setNotifOpen] = useState(false);
     const { sessions: activeSessions } = useRealtimeSessions();
 
@@ -46,7 +46,7 @@ export default function Header({ onMenuToggle, pageTitle, pageSubtitle, onAddSta
                 {/* Date Range (Desktop) */}
                 <div className="hidden lg:flex items-center gap-2 px-3 py-2 bg-neutral-100 rounded-lg cursor-pointer hover:bg-neutral-200">
                     <Calendar className="w-4 h-4 text-neutral-500" />
-                    <span className="text-sm">Jan 22 - Jan 28, 2026</span>
+                    <span className="text-sm">{currentWeekLabel()}</span>
                     <ChevronDown className="w-4 h-4 text-neutral-400" />
                 </div>
 
@@ -103,14 +103,6 @@ export default function Header({ onMenuToggle, pageTitle, pageSubtitle, onAddSta
                     )}
                 </div>
 
-                {/* Quick Actions */}
-                <button
-                    onClick={onAddStation}
-                    className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition-colors tap-target"
-                >
-                    <Plus className="w-4 h-4" />
-                    <span className="text-sm font-medium hidden sm:inline">Add Station</span>
-                </button>
             </div>
         </header>
     );
