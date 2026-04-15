@@ -4,6 +4,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap, ZoomControl } from 'rea
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useEffect, useState } from 'react';
+import type { Station } from '@/lib/types';
 
 // Fix for default Leaflet marker icons in Next.js
 const DefaultIcon = L.icon({
@@ -16,21 +17,6 @@ const DefaultIcon = L.icon({
 });
 
 L.Marker.prototype.options.icon = DefaultIcon;
-
-interface Station {
-    id: number;
-    name: string;
-    status: 'Available' | 'In Use' | 'Warning' | 'Offline';
-    count: number;
-    address: string;
-    distance: string;
-    color: 'success' | 'brand' | 'warning' | 'danger';
-    position: [number, number];
-    chargers: number;
-    power: string;
-    price: string;
-    lastUpdate: string;
-}
 
 interface MapComponentProps {
     stations: Station[];
@@ -98,7 +84,7 @@ export default function MapComponent({ stations, selectedStation, onStationClick
                     transition: all 0.2s;
                     ${station.color === 'danger' ? 'animation: pulse 2s infinite;' : ''}
                 ">
-                    ${station.count}
+                    ${station.available_chargers}
                 </div>
                 <style>
                     @keyframes pulse {
@@ -140,7 +126,7 @@ export default function MapComponent({ stations, selectedStation, onStationClick
                         <div className="font-sans">
                             <h4 className="font-bold">{station.name}</h4>
                             <p className="text-sm text-neutral-600">{station.address}</p>
-                            <p className="text-sm font-medium mt-1">{station.count} Chargers {station.status}</p>
+                            <p className="text-sm font-medium mt-1">{station.available_chargers} Chargers {station.status}</p>
                         </div>
                     </Popup>
                 </Marker>

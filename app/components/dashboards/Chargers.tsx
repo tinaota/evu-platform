@@ -1,8 +1,17 @@
 'use client';
 
 import { PlugZap, BatteryCharging, AlertTriangle, MoreVertical } from 'lucide-react';
+import { useChargers } from '@/lib/hooks/useChargers';
 
 export default function Chargers() {
+    const { chargers, loading } = useChargers();
+
+    const total = chargers.length;
+    const available = chargers.filter(c => c.status === 'Available').length;
+    const inUse = chargers.filter(c => c.status === 'Charging').length;
+    const warning = chargers.filter(c => c.status === 'Warning').length;
+    const offline = chargers.filter(c => c.status === 'Offline').length;
+
     const getStatusColors = (status: string) => {
         const colorMap = {
             Available: {
@@ -33,36 +42,29 @@ export default function Chargers() {
         return colorMap[status as keyof typeof colorMap] || colorMap.Available;
     };
 
-    const chargers = [
-        { id: '#1201', station: 'Congress Center', type: 'DC Fast (150kW)', status: 'Available', lastSession: '2h ago' },
-        { id: '#1202', station: 'Congress Center', status: 'Charging', energy: '45 kWh', duration: '45 min', progress: 75 },
-        { id: '#1203', station: 'Downtown Plaza', status: 'Warning', issue: 'Low Power', capacity: '60%' },
-        { id: '#1204', station: 'East Side Hub', status: 'Offline', issue: 'No Connection', since: '2 hours ago' },
-    ];
-
     return (
         <div className="dashboard-view">
             {/* Stats */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-6 mb-6">
                 <div className="bg-white rounded-xl p-4 sm:p-5 border border-neutral-200">
                     <p className="text-xs sm:text-sm text-neutral-500 mb-1">Total Chargers</p>
-                    <p className="text-xl sm:text-2xl font-bold">64</p>
+                    <p className="text-xl sm:text-2xl font-bold">{loading ? '—' : total}</p>
                 </div>
                 <div className="bg-white rounded-xl p-4 sm:p-5 border border-neutral-200">
                     <p className="text-xs sm:text-sm text-neutral-500 mb-1">Available</p>
-                    <p className="text-xl sm:text-2xl font-bold text-success-600">32</p>
+                    <p className="text-xl sm:text-2xl font-bold text-success-600">{loading ? '—' : available}</p>
                 </div>
                 <div className="bg-white rounded-xl p-4 sm:p-5 border border-neutral-200">
                     <p className="text-xs sm:text-sm text-neutral-500 mb-1">In Use</p>
-                    <p className="text-xl sm:text-2xl font-bold text-brand-600">24</p>
+                    <p className="text-xl sm:text-2xl font-bold text-brand-600">{loading ? '—' : inUse}</p>
                 </div>
                 <div className="bg-white rounded-xl p-4 sm:p-5 border border-neutral-200">
                     <p className="text-xs sm:text-sm text-neutral-500 mb-1">Warning</p>
-                    <p className="text-xl sm:text-2xl font-bold text-warning-600">5</p>
+                    <p className="text-xl sm:text-2xl font-bold text-warning-600">{loading ? '—' : warning}</p>
                 </div>
                 <div className="bg-white rounded-xl p-4 sm:p-5 border border-neutral-200 col-span-2 sm:col-span-1">
                     <p className="text-xs sm:text-sm text-neutral-500 mb-1">Offline</p>
-                    <p className="text-xl sm:text-2xl font-bold text-danger-600">3</p>
+                    <p className="text-xl sm:text-2xl font-bold text-danger-600">{loading ? '—' : offline}</p>
                 </div>
             </div>
 

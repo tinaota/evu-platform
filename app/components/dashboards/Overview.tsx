@@ -1,40 +1,37 @@
 'use client';
 
-import { Activity, Zap, DollarSign, HeartPulse, TrendingUp, TrendingDown, AlertTriangle, MapPin } from 'lucide-react';
+import { Activity, Zap, DollarSign, HeartPulse, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react';
 import { EnergyBarChart, PerformanceBarChart } from '../ChartComponents';
 import dynamic from 'next/dynamic';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useStations } from '@/lib/hooks/useStations';
+import { useRealtimeSessions } from '@/lib/hooks/useRealtimeSessions';
+import type { Station } from '@/lib/types';
 
 const MapComponent = dynamic(() => import('./MapComponent'), {
     ssr: false,
     loading: () => <div className="h-full w-full bg-neutral-100 animate-pulse flex items-center justify-center text-neutral-400">Loading Map...</div>
 });
 
-interface Station {
-    id: number;
-    name: string;
-    status: 'Available' | 'In Use' | 'Warning' | 'Offline';
-    count: number;
-    address: string;
-    distance: string;
-    color: 'success' | 'brand' | 'warning' | 'danger';
-    position: [number, number];
-    chargers: number;
-    power: string;
-    price: string;
-    lastUpdate: string;
+interface OverviewStats {
+    activeSessions: number
+    energyToday: number
+    revenueToday: number
+    stationsOnline: number
+    stationsTotal: number
 }
 
 export default function Overview() {
     const [selectedStation, setSelectedStation] = useState<Station | null>(null);
+    const [stats, setStats] = useState<OverviewStats | null>(null);
 
-    const overviewStations: Station[] = [
-        { id: 1, name: 'Congress Center', status: 'Available', count: 4, address: '1800 E Jackson Ave, Milwaukee', distance: '0.3 mi', color: 'success', position: [43.0389, -87.9065], chargers: 8, power: '150 kW', price: '$0.35/kWh', lastUpdate: '2 min ago' },
-        { id: 2, name: 'Public Market', status: 'In Use', count: 2, address: '400 N Water St, Milwaukee', distance: '0.5 mi', color: 'brand', position: [43.0352, -87.9092], chargers: 6, power: '150 kW', price: '$0.32/kWh', lastUpdate: '1 min ago' },
-        { id: 3, name: 'Downtown Plaza', status: 'Warning', count: 3, address: '123 Main St, Milwaukee', distance: '0.7 mi', color: 'warning', position: [43.0412, -87.9105], chargers: 4, power: '100 kW', price: '$0.30/kWh', lastUpdate: '3 min ago' },
-        { id: 4, name: 'East Side Hub', status: 'Offline', count: 1, address: '567 East Blvd, Milwaukee', distance: '1.2 mi', color: 'danger', position: [43.0525, -87.8890], chargers: 6, power: '150 kW', price: '$0.33/kWh', lastUpdate: '15 min ago' },
-        { id: 5, name: 'Lakefront Station', status: 'Available', count: 5, address: '890 Lakefront Dr, Milwaukee', distance: '1.5 mi', color: 'success', position: [43.0375, -87.8965], chargers: 10, power: '350 kW', price: '$0.38/kWh', lastUpdate: 'Just now' },
-    ];
+    const { stations } = useStations();
+    const { sessions: activeSessions } = useRealtimeSessions();
+
+    useEffect(() => {
+        fetch('/api/overview').then(r => r.json()).then(setStats);
+    }, []);
+
     return (
         <div className="dashboard-view">
             {/* Alert Banner */}
@@ -66,7 +63,7 @@ export default function Overview() {
                             +12%
                         </span>
                     </div>
-                    <p className="text-xl sm:text-2xl font-bold">24</p>
+                    <p className="text-xl sm:text-2xl font-bold">{stats?.activeSessions ?? activeSessions.length}</p>
                     <p className="text-neutral-500 text-xs sm:text-sm">Active Sessions</p>
                     <div className="mt-2 sm:mt-3 flex items-center gap-2">
                         <div className="flex-1 h-1.5 sm:h-2 bg-neutral-100 rounded-full overflow-hidden">
@@ -87,7 +84,7 @@ export default function Overview() {
                             +8%
                         </span>
                     </div>
-                    <p className="text-xl sm:text-2xl font-bold">5,146 <span className="text-sm sm:text-lg font-normal text-neutral-400">kWh</span></p>
+                    <p className="text-xl sm:text-2xl font-bold">{stats ? stats.energyToday.toLocaleString() : '—'} <span className="text-sm sm:text-lg font-normal text-neutral-400">kWh</span></p>
                     <p className="text-neutral-500 text-xs sm:text-sm">Energy Today</p>
                     <div className="mt-2 sm:mt-3 text-xs text-neutral-500 hidden sm:block">
                         <span className="text-success-600 font-medium">Peak:</span> 2-4 PM
@@ -105,7 +102,7 @@ export default function Overview() {
                             +15%
                         </span>
                     </div>
-                    <p className="text-xl sm:text-2xl font-bold">$1,588</p>
+                    <p className="text-xl sm:text-2xl font-bold">{stats ? `$${stats.revenueToday.toLocaleString()}` : '—'}</p>
                     <p className="text-neutral-500 text-xs sm:text-sm">Revenue Today</p>
                     <div className="mt-2 sm:mt-3 text-xs text-neutral-500 hidden sm:block">
                         Avg: <span className="text-neutral-700 font-medium">$18.50</span>
@@ -123,16 +120,18 @@ export default function Overview() {
                             -2%
                         </span>
                     </div>
-                    <p className="text-xl sm:text-2xl font-bold">92%</p>
+                    <p className="text-xl sm:text-2xl font-bold">
+                        {stats && stats.stationsTotal > 0 ? `${Math.round((stats.stationsOnline / stats.stationsTotal) * 100)}%` : '—'}
+                    </p>
                     <p className="text-neutral-500 text-xs sm:text-sm">Uptime</p>
                     <div className="mt-2 sm:mt-3 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-xs">
                         <span className="flex items-center gap-1">
                             <span className="w-2 h-2 rounded-full bg-success-500"></span>
-                            37 Online
+                            {stats?.stationsOnline ?? '—'} Online
                         </span>
                         <span className="flex items-center gap-1">
                             <span className="w-2 h-2 rounded-full bg-danger-500"></span>
-                            3 Offline
+                            {stats ? stats.stationsTotal - stats.stationsOnline : '—'} Offline
                         </span>
                     </div>
                 </div>
@@ -156,7 +155,7 @@ export default function Overview() {
                     </div>
                     <div className="h-80 relative">
                         <MapComponent
-                            stations={overviewStations}
+                            stations={stations}
                             selectedStation={selectedStation}
                             onStationClick={setSelectedStation}
                         />
@@ -192,35 +191,26 @@ export default function Overview() {
                         <button className="text-brand-500 text-sm font-medium hover:text-brand-600">View All</button>
                     </div>
                     <div className="divide-y divide-neutral-100 max-h-96 overflow-y-auto">
-                        {[
-                            { name: 'Congress Center #1', energy: '45 kWh', cost: '$13.50', progress: 75, time: '45 min ago', status: 'Charging' },
-                            { name: 'Public Market #2', energy: '28 kWh', cost: '$8.40', progress: 45, time: '28 min ago', status: 'Charging' },
-                            { name: 'Downtown Plaza #3', energy: '62 kWh', cost: '$18.60', progress: 95, time: '1h 12m ago', status: 'Finishing' },
-                            { name: 'East Side Hub #1', energy: '12 kWh', cost: '$3.60', progress: 20, time: '10 min ago', status: 'Charging' },
-                        ].map((session, idx) => (
-                            <div key={idx} className="p-4 hover:bg-neutral-50 cursor-pointer">
+                        {activeSessions.length === 0 && (
+                            <div className="p-6 text-center text-neutral-400 text-sm">No active sessions</div>
+                        )}
+                        {activeSessions.map((session) => (
+                            <div key={session.id} className="p-4 hover:bg-neutral-50 cursor-pointer">
                                 <div className="flex items-center justify-between mb-2">
-                                    <span className="font-medium text-sm">{session.name}</span>
-                                    <span className={`text-xs px-2 py-0.5 rounded-full ${session.status === 'Finishing'
-                                        ? 'bg-success-100 text-success-700'
-                                        : 'bg-brand-100 text-brand-700'
-                                        }`}>{session.status}</span>
+                                    <span className="font-medium text-sm">{session.stationName}</span>
+                                    <span className="text-xs px-2 py-0.5 rounded-full bg-brand-100 text-brand-700">Charging</span>
                                 </div>
                                 <div className="flex items-center justify-between text-sm">
-                                    <span className="text-neutral-500">{session.energy} delivered</span>
-                                    <span className="text-neutral-700 font-medium">{session.cost}</span>
+                                    <span className="text-neutral-500">{session.energy} kWh delivered</span>
+                                    <span className="text-neutral-700 font-medium">${session.cost.toFixed(2)}</span>
                                 </div>
                                 <div className="mt-2 flex items-center gap-2">
                                     <div className="flex-1 h-1.5 bg-neutral-100 rounded-full overflow-hidden">
-                                        <div
-                                            className={`h-full rounded-full ${session.status === 'Finishing' ? 'bg-success-500' : 'bg-brand-500'
-                                                }`}
-                                            style={{ width: `${session.progress}%` }}
-                                        ></div>
+                                        <div className="h-full rounded-full bg-brand-500" style={{ width: `${session.progress}%` }} />
                                     </div>
                                     <span className="text-xs text-neutral-500">{session.progress}%</span>
                                 </div>
-                                <p className="text-xs text-neutral-400 mt-2">Started {session.time}</p>
+                                <p className="text-xs text-neutral-400 mt-2">{session.duration} min elapsed</p>
                             </div>
                         ))}
                     </div>

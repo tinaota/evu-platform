@@ -1,88 +1,24 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Search, Layers, Maximize2, Plus, Minus, Locate, X, Zap, Clock, DollarSign, Navigation } from 'lucide-react';
+import { useState } from 'react';
+import { Search, Layers, Maximize2, X, Zap, Clock, DollarSign, Navigation } from 'lucide-react';
 import dynamic from 'next/dynamic';
+import { useStations } from '@/lib/hooks/useStations';
+import type { Station } from '@/lib/types';
+import StartSessionModal from '@/app/components/modals/StartSessionModal';
 
 const MapComponent = dynamic(() => import('./MapComponent'), {
     ssr: false,
     loading: () => <div className="h-full w-full bg-neutral-100 animate-pulse flex items-center justify-center text-neutral-400">Loading Map...</div>
 });
 
-interface Station {
-    id: number;
-    name: string;
-    status: 'Available' | 'In Use' | 'Warning' | 'Offline';
-    count: number;
-    address: string;
-    distance: string;
-    color: 'success' | 'brand' | 'warning' | 'danger';
-    position: [number, number];
-    chargers: number;
-    power: string;
-    price: string;
-    lastUpdate: string;
-}
-
 export default function LiveMap() {
     const [selectedStation, setSelectedStation] = useState<Station | null>(null);
     const [activeFilter, setActiveFilter] = useState<string>('All');
     const [searchQuery, setSearchQuery] = useState('');
-    const [lastUpdateTime, setLastUpdateTime] = useState(new Date());
+    const [showStartModal, setShowStartModal] = useState(false);
 
-    // Simulate real-time updates
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setLastUpdateTime(new Date());
-        }, 5000); // Update every 5 seconds
-
-        return () => clearInterval(interval);
-    }, []);
-
-    const getColorClasses = (color: string) => {
-        const colorMap = {
-            success: {
-                bg: 'bg-success-500',
-                bgLight: 'bg-success-100',
-                text: 'text-success-700',
-                textLight: 'text-success-400',
-                border: 'border-success-500'
-            },
-            brand: {
-                bg: 'bg-brand-500',
-                bgLight: 'bg-brand-100',
-                text: 'text-brand-700',
-                textLight: 'text-brand-400',
-                border: 'border-brand-500'
-            },
-            warning: {
-                bg: 'bg-warning-500',
-                bgLight: 'bg-warning-100',
-                text: 'text-warning-700',
-                textLight: 'text-warning-400',
-                border: 'border-warning-500'
-            },
-            danger: {
-                bg: 'bg-danger-500',
-                bgLight: 'bg-danger-100',
-                text: 'text-danger-700',
-                textLight: 'text-danger-400',
-                border: 'border-danger-500'
-            }
-        };
-        return colorMap[color as keyof typeof colorMap] || colorMap.success;
-    };
-
-    const allStations: Station[] = [
-        { id: 1, name: 'Congress Center', status: 'Available', count: 4, address: '1800 E Jackson Ave, Milwaukee', distance: '0.3 mi', color: 'success', position: [43.0389, -87.9065], chargers: 8, power: '150 kW', price: '$0.35/kWh', lastUpdate: '2 min ago' },
-        { id: 2, name: 'Public Market', status: 'In Use', count: 2, address: '400 N Water St, Milwaukee', distance: '0.5 mi', color: 'brand', position: [43.0352, -87.9092], chargers: 6, power: '150 kW', price: '$0.32/kWh', lastUpdate: '1 min ago' },
-        { id: 3, name: 'Downtown Plaza', status: 'Warning', count: 1, address: '123 Main St, Milwaukee', distance: '0.7 mi', color: 'warning', position: [43.0412, -87.9105], chargers: 4, power: '100 kW', price: '$0.30/kWh', lastUpdate: '3 min ago' },
-        { id: 4, name: 'East Side Hub', status: 'Offline', count: 0, address: '567 East Blvd, Milwaukee', distance: '1.2 mi', color: 'danger', position: [43.0525, -87.8890], chargers: 6, power: '150 kW', price: '$0.33/kWh', lastUpdate: '15 min ago' },
-        { id: 5, name: 'Lakefront Station', status: 'Available', count: 5, address: '890 Lakefront Dr, Milwaukee', distance: '1.5 mi', color: 'success', position: [43.0375, -87.8965], chargers: 10, power: '350 kW', price: '$0.38/kWh', lastUpdate: 'Just now' },
-        { id: 6, name: 'Tech Park', status: 'Available', count: 3, address: '456 Innovation Way, Milwaukee', distance: '2.1 mi', color: 'success', position: [43.0450, -87.9250], chargers: 6, power: '150 kW', price: '$0.34/kWh', lastUpdate: '1 min ago' },
-        { id: 7, name: 'Airport Hub', status: 'In Use', count: 1, address: '5300 S Howell Ave, Milwaukee', distance: '3.2 mi', color: 'brand', position: [42.9475, -87.9100], chargers: 12, power: '350 kW', price: '$0.40/kWh', lastUpdate: 'Just now' },
-        { id: 8, name: 'University Station', status: 'Available', count: 6, address: '2200 E Kenwood Blvd, Milwaukee', distance: '1.8 mi', color: 'success', position: [43.0750, -87.8830], chargers: 8, power: '150 kW', price: '$0.31/kWh', lastUpdate: '2 min ago' },
-    ];
+    const { stations: allStations, loading } = useStations();
 
     // Filter stations based on active filter and search query
     const filteredStations = allStations.filter(station => {
@@ -108,14 +44,18 @@ export default function LiveMap() {
         setSelectedStation(null);
     };
 
-    const getTimeAgo = () => {
-        const seconds = Math.floor((new Date().getTime() - lastUpdateTime.getTime()) / 1000);
-        if (seconds < 10) return 'Just now';
-        if (seconds < 60) return `${seconds}s ago`;
-        return `${Math.floor(seconds / 60)}m ago`;
+    const getColorClasses = (color: string) => {
+        const colorMap: Record<string, { bg: string; bgLight: string; text: string; border: string }> = {
+            success: { bg: 'bg-success-500', bgLight: 'bg-success-100', text: 'text-success-700', border: 'border-success-500' },
+            brand: { bg: 'bg-brand-500', bgLight: 'bg-brand-100', text: 'text-brand-700', border: 'border-brand-500' },
+            warning: { bg: 'bg-warning-500', bgLight: 'bg-warning-100', text: 'text-warning-700', border: 'border-warning-500' },
+            danger: { bg: 'bg-danger-500', bgLight: 'bg-danger-100', text: 'text-danger-700', border: 'border-danger-500' },
+        };
+        return colorMap[color] || colorMap.success;
     };
 
     return (
+        <>
         <div className="dashboard-view">
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 h-auto lg:h-[calc(100vh-180px)]">
                 {/* Map Area */}
@@ -197,7 +137,7 @@ export default function LiveMap() {
                                         <h3 className="font-bold text-lg">{selectedStation.name}</h3>
                                         <p className="text-sm text-neutral-500 flex items-center gap-1 mt-1">
                                             <Navigation className="w-3 h-3" />
-                                            {selectedStation.distance} away
+                                            {selectedStation.address}
                                         </p>
                                     </div>
                                     <button
@@ -210,7 +150,7 @@ export default function LiveMap() {
 
                                 <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full ${getColorClasses(selectedStation.color).bgLight} ${getColorClasses(selectedStation.color).text} text-sm font-medium mb-4`}>
                                     <span className={`w-2 h-2 rounded-full ${getColorClasses(selectedStation.color).bg}`}></span>
-                                    {selectedStation.count} of {selectedStation.chargers} {selectedStation.status}
+                                    {selectedStation.available_chargers} of {selectedStation.chargers} available
                                 </div>
 
                                 <div className="space-y-3 mb-4">
@@ -228,23 +168,31 @@ export default function LiveMap() {
                                         </span>
                                         <span className="font-semibold">{selectedStation.price}</span>
                                     </div>
-                                    <div className="flex items-center justify-between text-sm">
-                                        <span className="text-neutral-500 flex items-center gap-2">
-                                            <Clock className="w-4 h-4" />
-                                            Last Update
-                                        </span>
-                                        <span className="font-semibold">{selectedStation.lastUpdate}</span>
-                                    </div>
+                                    {selectedStation.lastUpdate && (
+                                      <div className="flex items-center justify-between text-sm">
+                                          <span className="text-neutral-500 flex items-center gap-2">
+                                              <Clock className="w-4 h-4" />
+                                              Last Update
+                                          </span>
+                                          <span className="font-semibold">{selectedStation.lastUpdate}</span>
+                                      </div>
+                                    )}
                                 </div>
 
-                                <p className="text-xs text-neutral-500 mb-4">{selectedStation.address}</p>
-
                                 <div className="flex gap-2">
-                                    <button className="flex-1 px-4 py-2 bg-brand-500 text-white rounded-lg text-sm font-medium hover:bg-brand-600 transition-colors">
-                                        Get Directions
-                                    </button>
-                                    <button className="flex-1 px-4 py-2 border border-neutral-200 text-neutral-700 rounded-lg text-sm font-medium hover:bg-neutral-50 transition-colors">
-                                        View Details
+                                    {selectedStation.status !== 'Offline' && selectedStation.available_chargers > 0 && (
+                                      <button
+                                          onClick={() => setShowStartModal(true)}
+                                          className="flex-1 px-4 py-2 bg-brand-500 text-white rounded-lg text-sm font-medium hover:bg-brand-600 transition-colors"
+                                      >
+                                          Start Charging Here
+                                      </button>
+                                    )}
+                                    <button
+                                        onClick={() => setSelectedStation(null)}
+                                        className="flex-1 px-4 py-2 border border-neutral-200 text-neutral-700 rounded-lg text-sm font-medium hover:bg-neutral-50 transition-colors"
+                                    >
+                                        Close
                                     </button>
                                 </div>
                             </div>
@@ -270,7 +218,7 @@ export default function LiveMap() {
                                 <span className="text-sm text-neutral-600">Offline ({statusCounts.Offline})</span>
                             </div>
                         </div>
-                        <span className="text-sm text-neutral-400">Last updated: {getTimeAgo()}</span>
+                        <span className="text-sm text-neutral-400">{loading ? 'Loading...' : `${allStations.length} stations loaded`}</span>
                     </div>
                 </div>
 
@@ -281,6 +229,9 @@ export default function LiveMap() {
                         <p className="text-sm text-neutral-500">{filteredStations.length} stations {activeFilter !== 'All' ? `(${activeFilter})` : 'in view'}</p>
                     </div>
                     <div className="flex-1 overflow-y-auto divide-y divide-neutral-100">
+                        {loading && (
+                            <div className="p-4 text-center text-neutral-400 text-sm">Loading stations...</div>
+                        )}
                         {filteredStations.map((station) => {
                             const colors = getColorClasses(station.color);
                             const isSelected = selectedStation?.id === station.id;
@@ -288,18 +239,17 @@ export default function LiveMap() {
                                 <div
                                     key={station.id}
                                     onClick={() => handleStationClick(station)}
-                                    className={`p-4 cursor-pointer transition-colors ${isSelected ? 'bg-brand-50 border-l-4 border-brand-500' : 'hover:bg-neutral-50'
-                                        }`}
+                                    className={`p-4 cursor-pointer transition-colors ${isSelected ? 'bg-brand-50 border-l-4 border-brand-500' : 'hover:bg-neutral-50'}`}
                                 >
                                     <div className="flex items-center justify-between mb-2">
                                         <span className="font-medium text-sm">{station.name}</span>
                                         <span className={`text-xs ${colors.bgLight} ${colors.text} px-2 py-0.5 rounded-full`}>
-                                            {station.count} {station.status}
+                                            {station.available_chargers} avail
                                         </span>
                                     </div>
                                     <p className="text-xs text-neutral-500">{station.address}</p>
                                     <div className="flex items-center justify-between mt-2">
-                                        <p className="text-xs text-neutral-400">{station.distance} away</p>
+                                        <span className={`text-xs ${colors.text} font-medium`}>{station.status}</span>
                                         <p className="text-xs font-medium text-brand-600">{station.power}</p>
                                     </div>
                                 </div>
@@ -309,5 +259,14 @@ export default function LiveMap() {
                 </div>
             </div>
         </div>
+
+        {showStartModal && selectedStation && (
+            <StartSessionModal
+                station={{ id: selectedStation.id, name: selectedStation.name, price_per_kwh: parseFloat(selectedStation.price.replace('$', '').replace('/kWh', '')) }}
+                onClose={() => setShowStartModal(false)}
+                onSuccess={() => setShowStartModal(false)}
+            />
+        )}
+        </>
     );
 }
