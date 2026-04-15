@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Search, Layers, Maximize2, X, Zap, Clock, DollarSign, Navigation } from 'lucide-react';
+import { Search, Layers, Maximize2, Minimize2, X, Zap, Clock, DollarSign, Navigation } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useStations } from '@/lib/hooks/useStations';
 import type { Station } from '@/lib/types';
@@ -17,6 +17,8 @@ export default function LiveMap() {
     const [activeFilter, setActiveFilter] = useState<string>('All');
     const [searchQuery, setSearchQuery] = useState('');
     const [showStartModal, setShowStartModal] = useState(false);
+    const [satelliteLayer, setSatelliteLayer] = useState(false);
+    const [sidebarHidden, setSidebarHidden] = useState(false);
 
     const { stations: allStations, loading } = useStations();
 
@@ -57,9 +59,9 @@ export default function LiveMap() {
     return (
         <>
         <div className="dashboard-view">
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 h-auto lg:h-[calc(100vh-180px)]">
+            <div className={`grid grid-cols-1 gap-4 sm:gap-6 h-auto lg:h-[calc(100vh-180px)] ${sidebarHidden ? '' : 'lg:grid-cols-4'}`}>
                 {/* Map Area */}
-                <div className="lg:col-span-3 bg-white rounded-xl border border-neutral-200 overflow-hidden flex flex-col">
+                <div className={`${sidebarHidden ? 'col-span-full' : 'lg:col-span-3'} bg-white rounded-xl border border-neutral-200 overflow-hidden flex flex-col`}>
                     <div className="p-3 sm:p-4 border-b border-neutral-100 shrink-0">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div className="flex flex-col sm:flex-row sm:items-center gap-3">
@@ -113,11 +115,19 @@ export default function LiveMap() {
                                 </div>
                             </div>
                             <div className="flex items-center gap-2 justify-end">
-                                <button className="p-2 hover:bg-neutral-100 rounded-lg tap-target">
-                                    <Layers className="w-5 h-5 text-neutral-500" />
+                                <button
+                                    onClick={() => setSatelliteLayer(v => !v)}
+                                    className={`p-2 rounded-lg tap-target transition-colors ${satelliteLayer ? 'bg-brand-50 text-brand-600' : 'hover:bg-neutral-100 text-neutral-500'}`}
+                                    title={satelliteLayer ? 'Street view' : 'Satellite view'}
+                                >
+                                    <Layers className="w-5 h-5" />
                                 </button>
-                                <button className="p-2 hover:bg-neutral-100 rounded-lg tap-target">
-                                    <Maximize2 className="w-5 h-5 text-neutral-500" />
+                                <button
+                                    onClick={() => setSidebarHidden(v => !v)}
+                                    className="p-2 hover:bg-neutral-100 rounded-lg tap-target"
+                                    title={sidebarHidden ? 'Show sidebar' : 'Expand map'}
+                                >
+                                    {sidebarHidden ? <Minimize2 className="w-5 h-5 text-neutral-500" /> : <Maximize2 className="w-5 h-5 text-neutral-500" />}
                                 </button>
                             </div>
                         </div>
@@ -127,6 +137,7 @@ export default function LiveMap() {
                             stations={filteredStations}
                             selectedStation={selectedStation}
                             onStationClick={handleStationClick}
+                            satelliteLayer={satelliteLayer}
                         />
 
                         {/* Selected Station Overlay - Keeping the custom UI but showing it when selected */}
@@ -223,7 +234,7 @@ export default function LiveMap() {
                 </div>
 
                 {/* Station List Sidebar */}
-                <div className="bg-white rounded-xl border border-neutral-200 flex flex-col overflow-hidden">
+                {!sidebarHidden && <div className="bg-white rounded-xl border border-neutral-200 flex flex-col overflow-hidden">
                     <div className="p-4 border-b border-neutral-100 shrink-0">
                         <h3 className="font-semibold">Nearby Stations</h3>
                         <p className="text-sm text-neutral-500">{filteredStations.length} stations {activeFilter !== 'All' ? `(${activeFilter})` : 'in view'}</p>
@@ -256,7 +267,7 @@ export default function LiveMap() {
                             );
                         })}
                     </div>
-                </div>
+                </div>}
             </div>
         </div>
 

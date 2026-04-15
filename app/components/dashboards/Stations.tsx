@@ -1,13 +1,60 @@
 'use client';
 
-import { Building2, CheckCircle, XCircle, PlugZap, Search, Plus, Eye, Edit, MoreVertical, Wrench } from 'lucide-react';
+import { Building2, CheckCircle, XCircle, PlugZap, Search, Plus, Eye, Edit, MoreVertical, Wrench, Trash2 } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { useStations } from '@/lib/hooks/useStations';
+import type { Station } from '@/lib/types';
+import StationModal from '@/app/components/modals/StationModal';
+
+const PAGE_SIZE = 10;
 
 export default function Stations() {
-    const stations = [
-        { id: 'STN-001', name: 'Congress Center', address: '1800 E Jackson Ave, Milwaukee', chargers: 4, available: 2, status: 'Online', sessions: 48, revenue: '$892', offline: false },
-        { id: 'STN-002', name: 'Public Market', address: '400 N Water St, Milwaukee', chargers: 2, available: 0, status: 'Online', sessions: 36, revenue: '$654', offline: false },
-        { id: 'STN-003', name: 'East Side Hub', address: '567 East Blvd, Milwaukee', chargers: 2, available: 0, status: 'Offline', sessions: 0, revenue: '$0', offline: true },
-    ];
+    const { stations, loading } = useStations();
+    const [filterStatus, setFilterStatus] = useState<'All' | 'Online' | 'Offline'>('All');
+    const [search, setSearch] = useState('');
+    const [page, setPage] = useState(0);
+    const [modal, setModal] = useState<{ mode: 'add' | 'view' | 'edit'; station?: Station } | null>(null);
+    const [menuOpen, setMenuOpen] = useState<string | null>(null);
+    const [deleting, setDeleting] = useState<string | null>(null);
+
+    const filtered = useMemo(() => {
+        return stations.filter(s => {
+            const matchesStatus =
+                filterStatus === 'All' ? true :
+                filterStatus === 'Online' ? s.status !== 'Offline' :
+                s.status === 'Offline';
+            const matchesSearch =
+                s.name.toLowerCase().includes(search.toLowerCase()) ||
+                s.address.toLowerCase().includes(search.toLowerCase());
+            return matchesStatus && matchesSearch;
+        });
+    }, [stations, filterStatus, search]);
+
+    const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+    const pageItems = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+
+    const total = stations.length;
+    const online = stations.filter(s => s.status !== 'Offline').length;
+    const offline = stations.filter(s => s.status === 'Offline').length;
+    const totalChargers = stations.reduce((acc, s) => acc + s.chargers, 0);
+
+    const handleDelete = async (id: string) => {
+        if (!confirm('Delete this station? This cannot be undone.')) return;
+        setDeleting(id);
+        await fetch(`/api/stations/${id}`, { method: 'DELETE' });
+        setDeleting(null);
+        setMenuOpen(null);
+    };
+
+    const handleFilterClick = (f: 'All' | 'Online' | 'Offline') => {
+        setFilterStatus(f);
+        setPage(0);
+    };
+
+    const handleSearchChange = (v: string) => {
+        setSearch(v);
+        setPage(0);
+    };
 
     return (
         <div className="dashboard-view">
@@ -19,7 +66,7 @@ export default function Stations() {
                             <Building2 className="w-4 h-4 sm:w-5 sm:h-5 text-brand-500" />
                         </div>
                         <div className="min-w-0">
-                            <p className="text-xl sm:text-2xl font-bold">40</p>
+                            <p className="text-xl sm:text-2xl font-bold">{loading ? '—' : total}</p>
                             <p className="text-xs sm:text-sm text-neutral-500">Total Stations</p>
                         </div>
                     </div>
@@ -30,7 +77,7 @@ export default function Stations() {
                             <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-success-500" />
                         </div>
                         <div className="min-w-0">
-                            <p className="text-xl sm:text-2xl font-bold">37</p>
+                            <p className="text-xl sm:text-2xl font-bold">{loading ? '—' : online}</p>
                             <p className="text-xs sm:text-sm text-neutral-500">Online</p>
                         </div>
                     </div>
@@ -41,7 +88,7 @@ export default function Stations() {
                             <XCircle className="w-4 h-4 sm:w-5 sm:h-5 text-danger-500" />
                         </div>
                         <div className="min-w-0">
-                            <p className="text-xl sm:text-2xl font-bold">3</p>
+                            <p className="text-xl sm:text-2xl font-bold">{loading ? '—' : offline}</p>
                             <p className="text-xs sm:text-sm text-neutral-500">Offline</p>
                         </div>
                     </div>
@@ -52,23 +99,32 @@ export default function Stations() {
                             <PlugZap className="w-4 h-4 sm:w-5 sm:h-5 text-violet-500" />
                         </div>
                         <div className="min-w-0">
-                            <p className="text-xl sm:text-2xl font-bold">64</p>
+                            <p className="text-xl sm:text-2xl font-bold">{loading ? '—' : totalChargers}</p>
                             <p className="text-xs sm:text-sm text-neutral-500">Chargers</p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Stations Table */}
+            {/* Table */}
             <div className="bg-white rounded-xl border border-neutral-200">
                 <div className="p-3 sm:p-4 border-b border-neutral-100">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                             <h3 className="font-semibold">All Stations</h3>
                             <div className="filter-scroll flex items-center gap-2 -mx-3 px-3 sm:mx-0 sm:px-0">
-                                <button className="px-3 py-1.5 text-sm bg-brand-50 text-brand-600 rounded-lg font-medium whitespace-nowrap">All</button>
-                                <button className="px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 rounded-lg whitespace-nowrap">Online</button>
-                                <button className="px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 rounded-lg whitespace-nowrap">Offline</button>
+                                {(['All', 'Online', 'Offline'] as const).map(f => (
+                                    <button
+                                        key={f}
+                                        onClick={() => handleFilterClick(f)}
+                                        className={`px-3 py-1.5 text-sm rounded-lg font-medium whitespace-nowrap transition-colors ${filterStatus === f
+                                            ? f === 'Offline' ? 'bg-danger-50 text-danger-600' : 'bg-brand-50 text-brand-600'
+                                            : 'text-neutral-600 hover:bg-neutral-100'
+                                        }`}
+                                    >
+                                        {f}
+                                    </button>
+                                ))}
                             </div>
                         </div>
                         <div className="flex items-center gap-2 sm:gap-3">
@@ -77,16 +133,22 @@ export default function Stations() {
                                 <input
                                     type="text"
                                     placeholder="Search..."
+                                    value={search}
+                                    onChange={(e) => handleSearchChange(e.target.value)}
                                     className="pl-10 pr-4 py-2 w-full sm:w-48 lg:w-64 bg-neutral-100 border-0 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                                 />
                             </div>
-                            <button className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-brand-500 text-white rounded-lg text-sm font-medium shrink-0 tap-target">
+                            <button
+                                onClick={() => setModal({ mode: 'add' })}
+                                className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-brand-500 text-white rounded-lg text-sm font-medium shrink-0 tap-target hover:bg-brand-600 transition-colors"
+                            >
                                 <Plus className="w-4 h-4" />
                                 <span className="hidden sm:inline">Add Station</span>
                             </button>
                         </div>
                     </div>
                 </div>
+
                 <div className="overflow-x-auto table-responsive">
                     <table className="w-full">
                         <thead className="bg-neutral-50">
@@ -95,81 +157,151 @@ export default function Stations() {
                                 <th className="text-left text-sm font-medium text-neutral-500 px-4 py-3">Address</th>
                                 <th className="text-left text-sm font-medium text-neutral-500 px-4 py-3">Chargers</th>
                                 <th className="text-left text-sm font-medium text-neutral-500 px-4 py-3">Status</th>
-                                <th className="text-left text-sm font-medium text-neutral-500 px-4 py-3">Sessions Today</th>
-                                <th className="text-left text-sm font-medium text-neutral-500 px-4 py-3">Revenue Today</th>
+                                <th className="text-left text-sm font-medium text-neutral-500 px-4 py-3">Power</th>
+                                <th className="text-left text-sm font-medium text-neutral-500 px-4 py-3">Price</th>
                                 <th className="text-left text-sm font-medium text-neutral-500 px-4 py-3">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-neutral-100">
-                            {stations.map((station) => (
-                                <tr key={station.id} className={`hover:bg-neutral-50 ${station.offline ? 'bg-danger-50/50' : ''}`}>
-                                    <td className="px-4 py-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className={`w-10 h-10 rounded-lg ${station.offline ? 'bg-danger-100' : 'bg-brand-100'} flex items-center justify-center`}>
-                                                <Building2 className={`w-5 h-5 ${station.offline ? 'text-danger-600' : 'text-brand-600'}`} />
-                                            </div>
-                                            <div>
-                                                <p className="font-medium text-sm">{station.name}</p>
-                                                <p className="text-xs text-neutral-500">ID: {station.id}</p>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-4 py-4 text-sm text-neutral-600">{station.address}</td>
-                                    <td className="px-4 py-4">
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-sm font-medium">{station.chargers}</span>
-                                            <span className={`text-xs ${station.offline ? 'text-danger-500' : 'text-neutral-500'}`}>
-                                                ({station.offline ? 'offline' : `${station.available} available`})
-                                            </span>
-                                        </div>
-                                    </td>
-                                    <td className="px-4 py-4">
-                                        <span className={`text-xs px-2 py-1 rounded-full ${station.offline
-                                                ? 'bg-danger-100 text-danger-700'
-                                                : 'bg-success-100 text-success-700'
-                                            }`}>
-                                            {station.status}
-                                        </span>
-                                    </td>
-                                    <td className={`px-4 py-4 text-sm font-medium ${station.offline ? 'text-neutral-400' : ''}`}>
-                                        {station.sessions}
-                                    </td>
-                                    <td className={`px-4 py-4 text-sm font-medium ${station.offline ? 'text-neutral-400' : 'text-success-600'}`}>
-                                        {station.revenue}
-                                    </td>
-                                    <td className="px-4 py-4">
-                                        <div className="flex items-center gap-1">
-                                            <button className="p-2 hover:bg-neutral-100 rounded-lg">
-                                                <Eye className="w-4 h-4 text-neutral-500" />
-                                            </button>
-                                            <button className="p-2 hover:bg-neutral-100 rounded-lg">
-                                                {station.offline ? (
-                                                    <Wrench className="w-4 h-4 text-danger-500" />
-                                                ) : (
-                                                    <Edit className="w-4 h-4 text-neutral-500" />
-                                                )}
-                                            </button>
-                                            <button className="p-2 hover:bg-neutral-100 rounded-lg">
-                                                <MoreVertical className="w-4 h-4 text-neutral-500" />
-                                            </button>
-                                        </div>
-                                    </td>
+                            {loading && (
+                                <tr>
+                                    <td colSpan={7} className="px-4 py-8 text-center text-neutral-400 text-sm">Loading stations…</td>
                                 </tr>
-                            ))}
+                            )}
+                            {!loading && pageItems.length === 0 && (
+                                <tr>
+                                    <td colSpan={7} className="px-4 py-8 text-center text-neutral-400 text-sm">No stations found</td>
+                                </tr>
+                            )}
+                            {pageItems.map((station) => {
+                                const isOffline = station.status === 'Offline';
+                                return (
+                                    <tr key={station.id} className={`hover:bg-neutral-50 ${isOffline ? 'bg-danger-50/30' : ''}`}>
+                                        <td className="px-4 py-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-10 h-10 rounded-lg ${isOffline ? 'bg-danger-100' : 'bg-brand-100'} flex items-center justify-center shrink-0`}>
+                                                    <Building2 className={`w-5 h-5 ${isOffline ? 'text-danger-600' : 'text-brand-600'}`} />
+                                                </div>
+                                                <div>
+                                                    <p className="font-medium text-sm">{station.name}</p>
+                                                    <p className="text-xs text-neutral-500 font-mono">{station.id.slice(0, 8)}…</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-4 text-sm text-neutral-600 max-w-[200px] truncate">{station.address}</td>
+                                        <td className="px-4 py-4">
+                                            <div className="text-sm">
+                                                <span className="font-medium">{station.chargers}</span>
+                                                <span className="text-neutral-500 ml-1">
+                                                    ({isOffline ? 'offline' : `${station.available_chargers} avail`})
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-4">
+                                            <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                                                station.status === 'Available' ? 'bg-success-100 text-success-700' :
+                                                station.status === 'In Use' ? 'bg-brand-100 text-brand-700' :
+                                                station.status === 'Warning' ? 'bg-warning-100 text-warning-700' :
+                                                'bg-danger-100 text-danger-700'
+                                            }`}>
+                                                {station.status}
+                                            </span>
+                                        </td>
+                                        <td className="px-4 py-4 text-sm text-neutral-700">{station.power}</td>
+                                        <td className="px-4 py-4 text-sm text-neutral-700">{station.price}</td>
+                                        <td className="px-4 py-4">
+                                            <div className="flex items-center gap-1 relative">
+                                                <button
+                                                    onClick={() => setModal({ mode: 'view', station })}
+                                                    className="p-2 hover:bg-neutral-100 rounded-lg"
+                                                    title="View"
+                                                >
+                                                    <Eye className="w-4 h-4 text-neutral-500" />
+                                                </button>
+                                                <button
+                                                    onClick={() => setModal({ mode: 'edit', station })}
+                                                    className="p-2 hover:bg-neutral-100 rounded-lg"
+                                                    title="Edit"
+                                                >
+                                                    {isOffline ? (
+                                                        <Wrench className="w-4 h-4 text-danger-500" />
+                                                    ) : (
+                                                        <Edit className="w-4 h-4 text-neutral-500" />
+                                                    )}
+                                                </button>
+                                                <button
+                                                    onClick={() => setMenuOpen(menuOpen === station.id ? null : station.id)}
+                                                    className="p-2 hover:bg-neutral-100 rounded-lg"
+                                                    title="More"
+                                                >
+                                                    <MoreVertical className="w-4 h-4 text-neutral-500" />
+                                                </button>
+                                                {menuOpen === station.id && (
+                                                    <div className="absolute right-0 top-full mt-1 w-36 bg-white rounded-lg shadow-lg border border-neutral-200 z-10">
+                                                        <button
+                                                            onClick={() => handleDelete(station.id)}
+                                                            disabled={deleting === station.id}
+                                                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-danger-600 hover:bg-danger-50 rounded-lg"
+                                                        >
+                                                            <Trash2 className="w-4 h-4" />
+                                                            {deleting === station.id ? 'Deleting…' : 'Delete'}
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                         </tbody>
                     </table>
                 </div>
+
+                {/* Pagination */}
                 <div className="p-3 sm:p-4 border-t border-neutral-100 flex flex-col sm:flex-row items-center justify-between gap-3">
-                    <p className="text-xs sm:text-sm text-neutral-500">Showing 1-10 of 40 stations</p>
+                    <p className="text-xs sm:text-sm text-neutral-500">
+                        Showing {filtered.length === 0 ? 0 : page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, filtered.length)} of {filtered.length} stations
+                    </p>
                     <div className="flex items-center gap-1 sm:gap-2">
-                        <button className="px-2 sm:px-3 py-1.5 border border-neutral-200 rounded-lg text-xs sm:text-sm hover:bg-neutral-50">Prev</button>
-                        <button className="px-2.5 sm:px-3 py-1.5 bg-brand-500 text-white rounded-lg text-xs sm:text-sm">1</button>
-                        <button className="px-2.5 sm:px-3 py-1.5 border border-neutral-200 rounded-lg text-xs sm:text-sm hover:bg-neutral-50">2</button>
-                        <button className="px-2.5 sm:px-3 py-1.5 border border-neutral-200 rounded-lg text-xs sm:text-sm hover:bg-neutral-50 hidden sm:block">3</button>
-                        <button className="px-2 sm:px-3 py-1.5 border border-neutral-200 rounded-lg text-xs sm:text-sm hover:bg-neutral-50">Next</button>
+                        <button
+                            onClick={() => setPage(p => Math.max(0, p - 1))}
+                            disabled={page === 0}
+                            className="px-2 sm:px-3 py-1.5 border border-neutral-200 rounded-lg text-xs sm:text-sm hover:bg-neutral-50 disabled:opacity-40"
+                        >
+                            Prev
+                        </button>
+                        {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                            const pageNum = Math.max(0, Math.min(page - 2, totalPages - 5)) + i;
+                            return (
+                                <button
+                                    key={pageNum}
+                                    onClick={() => setPage(pageNum)}
+                                    className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm ${page === pageNum ? 'bg-brand-500 text-white' : 'border border-neutral-200 hover:bg-neutral-50'}`}
+                                >
+                                    {pageNum + 1}
+                                </button>
+                            );
+                        })}
+                        <button
+                            onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                            disabled={page >= totalPages - 1}
+                            className="px-2 sm:px-3 py-1.5 border border-neutral-200 rounded-lg text-xs sm:text-sm hover:bg-neutral-50 disabled:opacity-40"
+                        >
+                            Next
+                        </button>
                     </div>
                 </div>
             </div>
+
+            {/* Modals */}
+            {modal && (
+                <StationModal
+                    mode={modal.mode}
+                    station={modal.station}
+                    onClose={() => setModal(null)}
+                    onSuccess={() => setModal(null)}
+                />
+            )}
         </div>
     );
 }

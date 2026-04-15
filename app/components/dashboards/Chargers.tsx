@@ -1,10 +1,16 @@
 'use client';
 
 import { PlugZap, BatteryCharging, AlertTriangle, MoreVertical } from 'lucide-react';
+import { useState } from 'react';
 import { useChargers } from '@/lib/hooks/useChargers';
+import { useStations } from '@/lib/hooks/useStations';
 
 export default function Chargers() {
-    const { chargers, loading } = useChargers();
+    const [selectedStationId, setSelectedStationId] = useState<string>('');
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+
+    const { stations } = useStations();
+    const { chargers, loading } = useChargers(selectedStationId || undefined);
 
     const total = chargers.length;
     const available = chargers.filter(c => c.status === 'Available').length;
@@ -73,106 +79,167 @@ export default function Chargers() {
                 <div className="p-3 sm:p-4 border-b border-neutral-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                         <h3 className="font-semibold">All Chargers</h3>
-                        <select className="text-sm border border-neutral-200 rounded-lg px-3 py-1.5 w-full sm:w-auto">
-                            <option>All Stations</option>
-                            <option>Congress Center</option>
-                            <option>Public Market</option>
-                            <option>Downtown Plaza</option>
+                        <select
+                            value={selectedStationId}
+                            onChange={(e) => setSelectedStationId(e.target.value)}
+                            className="text-sm border border-neutral-200 rounded-lg px-3 py-1.5 w-full sm:w-auto focus:outline-none focus:ring-2 focus:ring-brand-500"
+                        >
+                            <option value="">All Stations</option>
+                            {stations.map(s => (
+                                <option key={s.id} value={s.id}>{s.name}</option>
+                            ))}
                         </select>
                     </div>
                     <div className="flex items-center gap-2">
-                        <button className="p-2 hover:bg-neutral-100 rounded-lg border border-neutral-200 tap-target">
-                            <svg className="w-4 h-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <button
+                            onClick={() => setViewMode('grid')}
+                            className={`p-2 rounded-lg border ${viewMode === 'grid' ? 'border-brand-300 bg-brand-50' : 'border-neutral-200 hover:bg-neutral-100'} tap-target`}
+                            title="Grid view"
+                        >
+                            <svg className={`w-4 h-4 ${viewMode === 'grid' ? 'text-brand-500' : 'text-neutral-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
                             </svg>
                         </button>
-                        <button className="p-2 hover:bg-neutral-100 rounded-lg border border-neutral-200 tap-target">
-                            <svg className="w-4 h-4 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <button
+                            onClick={() => setViewMode('list')}
+                            className={`p-2 rounded-lg border ${viewMode === 'list' ? 'border-brand-300 bg-brand-50' : 'border-neutral-200 hover:bg-neutral-100'} tap-target`}
+                            title="List view"
+                        >
+                            <svg className={`w-4 h-4 ${viewMode === 'list' ? 'text-brand-500' : 'text-neutral-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                             </svg>
                         </button>
                     </div>
                 </div>
-                <div className="p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {chargers.map((charger, idx) => {
-                        const colors = getStatusColors(charger.status);
 
-                        return (
-                            <div key={idx} className={`border rounded-xl p-4 hover:shadow-md transition-shadow cursor-pointer ${colors.border} ${colors.bg}`}>
-                                <div className="flex items-center justify-between mb-3">
-                                    <span className={`text-xs px-2 py-0.5 rounded-full ${colors.badge}`}>
-                                        {charger.status}
-                                    </span>
-                                    <MoreVertical className="w-4 h-4 text-neutral-400" />
-                                </div>
-                                <div className="flex items-center gap-3 mb-3">
-                                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${colors.icon}`}>
-                                        {charger.status === 'Charging' ? (
-                                            <BatteryCharging className="w-6 h-6" />
-                                        ) : charger.status === 'Warning' ? (
-                                            <AlertTriangle className="w-6 h-6" />
-                                        ) : (
-                                            <PlugZap className="w-6 h-6" />
+                {viewMode === 'grid' ? (
+                    <div className="p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                        {loading && (
+                            <div className="col-span-full text-center text-neutral-400 text-sm py-8">Loading chargers…</div>
+                        )}
+                        {chargers.map((charger, idx) => {
+                            const colors = getStatusColors(charger.status);
+                            return (
+                                <div key={idx} className={`border rounded-xl p-4 hover:shadow-md transition-shadow cursor-pointer ${colors.border} ${colors.bg}`}>
+                                    <div className="flex items-center justify-between mb-3">
+                                        <span className={`text-xs px-2 py-0.5 rounded-full ${colors.badge}`}>
+                                            {charger.status}
+                                        </span>
+                                        <MoreVertical className="w-4 h-4 text-neutral-400" />
+                                    </div>
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${colors.icon}`}>
+                                            {charger.status === 'Charging' ? (
+                                                <BatteryCharging className="w-6 h-6" />
+                                            ) : charger.status === 'Warning' ? (
+                                                <AlertTriangle className="w-6 h-6" />
+                                            ) : (
+                                                <PlugZap className="w-6 h-6" />
+                                            )}
+                                        </div>
+                                        <div>
+                                            <p className="font-medium">Charger {charger.id}</p>
+                                            <p className="text-xs text-neutral-500">{charger.station}</p>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2 text-sm">
+                                        {charger.type && (
+                                            <div className="flex justify-between">
+                                                <span className="text-neutral-500">Type</span>
+                                                <span className="font-medium">{charger.type}</span>
+                                            </div>
+                                        )}
+                                        {charger.energy != null && (
+                                            <>
+                                                <div className="flex justify-between">
+                                                    <span className="text-neutral-500">Energy</span>
+                                                    <span className="font-medium">{charger.energy} kWh</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-neutral-500">Duration</span>
+                                                    <span>{charger.duration} min</span>
+                                                </div>
+                                                <div className="h-1.5 bg-neutral-200 rounded-full overflow-hidden">
+                                                    <div className="h-full bg-brand-500 rounded-full" style={{ width: `${charger.progress}%` }}></div>
+                                                </div>
+                                            </>
+                                        )}
+                                        {charger.issue && (
+                                            <>
+                                                <div className="flex justify-between">
+                                                    <span className="text-neutral-500">Issue</span>
+                                                    <span className={`font-medium ${charger.status === 'Warning' ? 'text-warning-600' : 'text-danger-600'}`}>{charger.issue}</span>
+                                                </div>
+                                                {charger.capacity && (
+                                                    <div className="flex justify-between">
+                                                        <span className="text-neutral-500">Capacity</span>
+                                                        <span>{charger.capacity}</span>
+                                                    </div>
+                                                )}
+                                                {charger.since && (
+                                                    <div className="flex justify-between">
+                                                        <span className="text-neutral-500">Since</span>
+                                                        <span>{charger.since}</span>
+                                                    </div>
+                                                )}
+                                            </>
+                                        )}
+                                        {charger.lastSession && (
+                                            <div className="flex justify-between">
+                                                <span className="text-neutral-500">Last Session</span>
+                                                <span>{charger.lastSession}</span>
+                                            </div>
                                         )}
                                     </div>
-                                    <div>
-                                        <p className="font-medium">Charger {charger.id}</p>
-                                        <p className="text-xs text-neutral-500">{charger.station}</p>
-                                    </div>
                                 </div>
-                                <div className="space-y-2 text-sm">
-                                    {charger.type && (
-                                        <div className="flex justify-between">
-                                            <span className="text-neutral-500">Type</span>
-                                            <span className="font-medium">{charger.type}</span>
-                                        </div>
-                                    )}
-                                    {charger.energy && (
-                                        <>
-                                            <div className="flex justify-between">
-                                                <span className="text-neutral-500">Energy</span>
-                                                <span className="font-medium">{charger.energy}</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span className="text-neutral-500">Duration</span>
-                                                <span>{charger.duration}</span>
-                                            </div>
-                                            <div className="h-1.5 bg-neutral-200 rounded-full overflow-hidden">
-                                                <div className="h-full bg-brand-500 rounded-full" style={{ width: `${charger.progress}%` }}></div>
-                                            </div>
-                                        </>
-                                    )}
-                                    {charger.issue && (
-                                        <>
-                                            <div className="flex justify-between">
-                                                <span className="text-neutral-500">Issue</span>
-                                                <span className={`font-medium ${charger.status === 'Warning' ? 'text-warning-600' : 'text-danger-600'}`}>{charger.issue}</span>
-                                            </div>
-                                            {charger.capacity && (
-                                                <div className="flex justify-between">
-                                                    <span className="text-neutral-500">Capacity</span>
-                                                    <span>{charger.capacity}</span>
+                            );
+                        })}
+                    </div>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="w-full">
+                            <thead className="bg-neutral-50">
+                                <tr>
+                                    <th className="text-left text-sm font-medium text-neutral-500 px-4 py-3">Charger</th>
+                                    <th className="text-left text-sm font-medium text-neutral-500 px-4 py-3">Station</th>
+                                    <th className="text-left text-sm font-medium text-neutral-500 px-4 py-3">Type</th>
+                                    <th className="text-left text-sm font-medium text-neutral-500 px-4 py-3">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-neutral-100">
+                                {loading && (
+                                    <tr>
+                                        <td colSpan={4} className="px-4 py-8 text-center text-neutral-400 text-sm">Loading…</td>
+                                    </tr>
+                                )}
+                                {chargers.map((charger, idx) => {
+                                    const colors = getStatusColors(charger.status);
+                                    return (
+                                        <tr key={idx} className="hover:bg-neutral-50">
+                                            <td className="px-4 py-3">
+                                                <div className="flex items-center gap-3">
+                                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${colors.icon}`}>
+                                                        {charger.status === 'Charging' ? (
+                                                            <BatteryCharging className="w-4 h-4" />
+                                                        ) : (
+                                                            <PlugZap className="w-4 h-4" />
+                                                        )}
+                                                    </div>
+                                                    <span className="text-sm font-medium">Charger {charger.id}</span>
                                                 </div>
-                                            )}
-                                            {charger.since && (
-                                                <div className="flex justify-between">
-                                                    <span className="text-neutral-500">Since</span>
-                                                    <span>{charger.since}</span>
-                                                </div>
-                                            )}
-                                        </>
-                                    )}
-                                    {charger.lastSession && (
-                                        <div className="flex justify-between">
-                                            <span className="text-neutral-500">Last Session</span>
-                                            <span>{charger.lastSession}</span>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
+                                            </td>
+                                            <td className="px-4 py-3 text-sm text-neutral-600">{charger.station}</td>
+                                            <td className="px-4 py-3 text-sm text-neutral-600">{charger.type}</td>
+                                            <td className="px-4 py-3">
+                                                <span className={`text-xs px-2 py-0.5 rounded-full ${colors.badge}`}>{charger.status}</span>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
             </div>
         </div>
     );

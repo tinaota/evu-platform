@@ -22,6 +22,7 @@ interface MapComponentProps {
     stations: Station[];
     selectedStation: Station | null;
     onStationClick: (station: Station) => void;
+    satelliteLayer?: boolean;
 }
 
 // Component to handle map view updates
@@ -40,7 +41,7 @@ function MapUpdater({ selectedStation }: { selectedStation: Station | null }) {
     return null;
 }
 
-export default function MapComponent({ stations, selectedStation, onStationClick }: MapComponentProps) {
+export default function MapComponent({ stations, selectedStation, onStationClick, satelliteLayer = false }: MapComponentProps) {
     const [isMounted, setIsMounted] = useState(false);
 
     useEffect(() => {
@@ -106,10 +107,17 @@ export default function MapComponent({ stations, selectedStation, onStationClick
             style={{ height: '100%', width: '100%' }}
             zoomControl={false}
         >
-            <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
+            {satelliteLayer ? (
+                <TileLayer
+                    attribution='Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+                    url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                />
+            ) : (
+                <TileLayer
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+            )}
             <ZoomControl position="bottomright" />
             <MapUpdater selectedStation={selectedStation} />
 
