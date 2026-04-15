@@ -1,19 +1,14 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { dbStationToUI, type Station } from '@/lib/types'
 
-/**
- * Fetches stations and subscribes to real-time updates.
- *
- * Usage:
- *   const { stations, loading } = useStations()
- */
 export function useStations() {
   const [stations, setStations] = useState<Station[]>([])
   const [loading, setLoading] = useState(true)
-  const supabase = createClient()
+  const supabase = useRef(createClient()).current
+  const channelName = useRef(`stations-${Math.random().toString(36).slice(2)}`).current
 
   const fetchStations = useCallback(async () => {
     const { data, error } = await supabase
@@ -25,13 +20,13 @@ export function useStations() {
 
     setStations((data ?? []).map(dbStationToUI))
     setLoading(false)
-  }, [])
+  }, [supabase])
 
   useEffect(() => {
     fetchStations()
 
     const channel = supabase
-      .channel('stations-watch')
+      .channel(channelName)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'stations' },
@@ -40,7 +35,7 @@ export function useStations() {
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
-  }, [fetchStations])
+  }, [fetchStations, supabase, channelName])
 
   return { stations, loading }
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { Charger } from '@/lib/types'
 
@@ -26,7 +26,8 @@ function dbChargerToUI(c: DBCharger): Charger {
 export function useChargers(stationId?: string) {
   const [chargers, setChargers] = useState<Charger[]>([])
   const [loading, setLoading] = useState(true)
-  const supabase = createClient()
+  const supabase = useRef(createClient()).current
+  const channelName = useRef(`chargers-${Math.random().toString(36).slice(2)}`).current
 
   const fetchChargers = useCallback(async () => {
     let query = supabase
@@ -41,18 +42,18 @@ export function useChargers(stationId?: string) {
 
     setChargers((data as DBCharger[] ?? []).map(dbChargerToUI))
     setLoading(false)
-  }, [stationId])
+  }, [stationId, supabase])
 
   useEffect(() => {
     fetchChargers()
 
     const channel = supabase
-      .channel('chargers-watch')
+      .channel(channelName)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'chargers' }, () => fetchChargers())
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
-  }, [fetchChargers])
+  }, [fetchChargers, supabase, channelName])
 
   return { chargers, loading, refetch: fetchChargers }
 }

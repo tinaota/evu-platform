@@ -1,26 +1,20 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { ActiveSession } from '@/lib/types'
 
-/**
- * Fetches active charging sessions and subscribes to real-time changes.
- * Automatically refetches when any session row changes.
- *
- * Usage:
- *   const { sessions, loading } = useRealtimeSessions()
- */
 export function useRealtimeSessions() {
   const [sessions, setSessions] = useState<ActiveSession[]>([])
   const [loading, setLoading] = useState(true)
-  const supabase = createClient()
+  const supabase = useRef(createClient()).current
+  const channelName = useRef(`active-sessions-${Math.random().toString(36).slice(2)}`).current
 
   const fetchSessions = useCallback(async () => {
     const { data, error } = await supabase
       .from('charging_sessions')
       .select(
-        `id, started_at, energy_kwh, cost_usd, battery_start_pct,
+        `id, started_at, energy_kwh, cost_usd,
          stations(name),
          vehicles(make, model, battery_capacity_kwh),
          profiles(full_name, avatar_url)`
@@ -51,13 +45,13 @@ export function useRealtimeSessions() {
 
     setSessions(mapped)
     setLoading(false)
-  }, [])
+  }, [supabase])
 
   useEffect(() => {
     fetchSessions()
 
     const channel = supabase
-      .channel('active-sessions-watch')
+      .channel(channelName)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'charging_sessions' },
@@ -66,7 +60,7 @@ export function useRealtimeSessions() {
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
-  }, [fetchSessions])
+  }, [fetchSessions, supabase, channelName])
 
   return { sessions, loading }
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
 export interface TelemetryReading {
@@ -12,23 +12,13 @@ export interface TelemetryReading {
   recorded_at: string
 }
 
-/**
- * Subscribes to real-time telemetry INSERTs for a given vehicle.
- * Returns the most recent reading.
- *
- * Usage:
- *   const telemetry = useRealtimeTelemetry(vehicleId)
- *
- * Automatically triggers the low-battery Edge Function when battery < 20%.
- */
 export function useRealtimeTelemetry(vehicleId: string | null) {
   const [latest, setLatest] = useState<TelemetryReading | null>(null)
-  const supabase = createClient()
+  const supabase = useRef(createClient()).current
 
   useEffect(() => {
     if (!vehicleId) return
 
-    // Fetch the most recent reading on mount
     supabase
       .from('telemetry')
       .select('battery_pct, lat, lng, speed_kmh, soc_kwh, recorded_at')
@@ -38,36 +28,26 @@ export function useRealtimeTelemetry(vehicleId: string | null) {
       .single()
       .then(({ data }) => { if (data) setLatest(data) })
 
+    const channelName = `telemetry-${vehicleId}-${Math.random().toString(36).slice(2)}`
     const channel = supabase
-      .channel(`telemetry:${vehicleId}`)
+      .channel(channelName)
       .on(
         'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'telemetry',
-          filter: `vehicle_id=eq.${vehicleId}`,
-        },
+        { event: 'INSERT', schema: 'public', table: 'telemetry', filter: `vehicle_id=eq.${vehicleId}` },
         (payload) => {
           const reading = payload.new as TelemetryReading
           setLatest(reading)
-
-          // Trigger low-battery alert via Edge Function
           if (reading.battery_pct < 20) {
             supabase.functions
-              .invoke('low-battery-alert', {
-                body: { vehicle_id: vehicleId, battery_pct: reading.battery_pct },
-              })
+              .invoke('low-battery-alert', { body: { vehicle_id: vehicleId, battery_pct: reading.battery_pct } })
               .catch(console.error)
           }
         }
       )
       .subscribe()
 
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [vehicleId])
+    return () => { supabase.removeChannel(channel) }
+  }, [vehicleId, supabase])
 
   return latest
 }
