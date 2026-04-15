@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import Overview from './components/dashboards/Overview';
@@ -9,11 +9,36 @@ import Stations from './components/dashboards/Stations';
 import Chargers from './components/dashboards/Chargers';
 import Sessions from './components/dashboards/Sessions';
 import { Revenue, Energy, Reports, Diagnostics, Alerts, Users, Settings } from './components/dashboards/OtherDashboards';
+import { createClient } from '@/lib/supabase/client';
+import type { UserRole } from '@/lib/types';
 
 export default function Home() {
-    const [currentRole, setCurrentRole] = useState('operator');
+    const [currentRole, setCurrentRole] = useState<UserRole>('operator');
     const [currentView, setCurrentView] = useState('overview');
     const [sidebarOpen, setSidebarOpen] = useState(false);
+
+    // Load the authenticated user's actual role from Supabase on mount.
+    // Falls back to 'operator' if no session exists (middleware handles redirect).
+    useEffect(() => {
+        const supabase = createClient();
+        supabase.auth.getUser().then(async ({ data: { user } }) => {
+            if (!user) return;
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('role')
+                .eq('id', user.id)
+                .single() as { data: { role: UserRole } | null; error: unknown };
+            if (profile?.role) {
+                const role = profile.role;
+                setCurrentRole(role);
+                // Jump to the default view for this role
+                if (role === 'owner') setCurrentView('revenue');
+                else if (role === 'technician') setCurrentView('diagnostics');
+                else if (role === 'admin') setCurrentView('users');
+                else setCurrentView('overview');
+            }
+        });
+    }, []);
 
     const titles: Record<string, [string, string]> = {
         'overview': ['Operations Overview', 'Real-time monitoring and management'],
@@ -31,7 +56,7 @@ export default function Home() {
     };
 
     const handleRoleChange = (role: string) => {
-        setCurrentRole(role);
+        setCurrentRole(role as UserRole);
         // Switch to appropriate default dashboard
         if (role === 'owner') {
             setCurrentView('revenue');
