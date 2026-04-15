@@ -20,7 +20,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.className} font-sans bg-neutral-50 text-neutral-800`}>
+      <body className={`${inter.className} font-sans bg-neutral-50 text-neutral-800`} suppressHydrationWarning>
         {children}
       </body>
     </html>
