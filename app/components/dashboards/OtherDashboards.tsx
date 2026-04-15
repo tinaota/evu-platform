@@ -5,7 +5,7 @@ import { TrendingUp, DollarSign, Receipt, User, Percent, ArrowUpRight, ChevronRi
 import { useState } from 'react';
 
 // Revenue Dashboard with interactive charts
-export function Revenue() {
+export function Revenue({ onNavigate }: { onNavigate?: (view: string) => void }) {
     const [activeTab, setActiveTab] = useState('Revenue');
 
     const revenueData = [
@@ -109,7 +109,7 @@ export function Revenue() {
                         ))}
                     </div>
 
-                    <button className="w-full mt-6 py-3 border border-neutral-100 rounded-xl text-neutral-500 text-sm font-medium hover:bg-neutral-50 transition-colors flex items-center justify-center gap-2">
+                    <button onClick={() => onNavigate?.('reports')} className="w-full mt-6 py-3 border border-neutral-100 rounded-xl text-neutral-500 text-sm font-medium hover:bg-neutral-50 transition-colors flex items-center justify-center gap-2">
                         View Detailed Report
                         <ChevronRight className="w-4 h-4" />
                     </button>
@@ -189,7 +189,7 @@ export function Energy() {
 }
 
 
-export function Diagnostics() {
+export function Diagnostics({ onNavigate }: { onNavigate?: (view: string) => void }) {
     const alerts = [
         {
             id: 1,
@@ -283,7 +283,7 @@ export function Diagnostics() {
                             <span className={`text-xs font-bold px-2 py-1 rounded tracking-wider ${alert.severity === 'CRITICAL' ? 'bg-danger-100 text-danger-600' : 'bg-warning-100 text-warning-600'}`}>
                                 {alert.severity}
                             </span>
-                            <button className={`px-3 py-1.5 rounded-lg text-sm font-bold text-white transition-all active:scale-95 ${alert.severity === 'CRITICAL' ? 'bg-danger-600 hover:bg-danger-700' : 'bg-warning-600 hover:bg-warning-700'}`}>
+                            <button onClick={() => onNavigate?.('chargers')} className={`px-3 py-1.5 rounded-lg text-sm font-bold text-white transition-all active:scale-95 ${alert.severity === 'CRITICAL' ? 'bg-danger-600 hover:bg-danger-700' : 'bg-warning-600 hover:bg-warning-700'}`}>
                                 {alert.action}
                             </button>
                         </div>
@@ -294,7 +294,7 @@ export function Diagnostics() {
     );
 }
 
-export function Alerts() {
+export function Alerts({ onNavigate }: { onNavigate?: (view: string) => void }) {
     const [activeTab, setActiveTab] = useState('All');
 
     const alertItems = [
@@ -398,7 +398,12 @@ export function Alerts() {
                                         <p className="text-[10px] text-neutral-400 font-medium">{alert.timestamp}</p>
                                         <div className="flex items-center gap-2 mt-3">
                                             {alert.actions.map((action, idx) => (
-                                                <button key={idx} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-95 ${idx === 0
+                                                <button
+                                                    key={idx}
+                                                    onClick={() => {
+                                                        if (action === 'Diagnose' || action === 'Inspect') onNavigate?.('chargers');
+                                                    }}
+                                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-95 ${idx === 0
                                                     ? (alert.color === 'danger' ? 'bg-danger-500 hover:bg-danger-600 text-white shadow-sm' :
                                                         alert.color === 'warning' ? 'bg-warning-500 hover:bg-warning-600 text-white shadow-sm' :
                                                             'bg-blue-500 hover:bg-blue-600 text-white shadow-sm')

@@ -94,19 +94,19 @@ export default function Home() {
 
     const renderDashboard = () => {
         switch (currentView) {
-            case 'overview': return <Overview />;
+            case 'overview': return <Overview onNavigate={handleNavigate} />;
             case 'map': return <LiveMap />;
             case 'stations': return <Stations />;
             case 'chargers': return <Chargers />;
             case 'sessions': return <Sessions />;
-            case 'revenue': return <Revenue />;
+            case 'revenue': return <Revenue onNavigate={handleNavigate} />;
             case 'energy': return <Energy />;
             case 'reports': return <Reports />;
-            case 'diagnostics': return <Diagnostics />;
-            case 'alerts': return <Alerts />;
+            case 'diagnostics': return <Diagnostics onNavigate={handleNavigate} />;
+            case 'alerts': return <Alerts onNavigate={handleNavigate} />;
             case 'users': return <Users />;
             case 'settings': return <Settings />;
-            default: return <Overview />;
+            default: return <Overview onNavigate={handleNavigate} />;
         }
     };
 
@@ -135,6 +135,7 @@ export default function Home() {
                         onMenuToggle={toggleSidebar}
                         pageTitle={titles[currentView]?.[0] || 'Dashboard'}
                         pageSubtitle={titles[currentView]?.[1] || ''}
+                        onAddStation={() => handleNavigate('stations')}
                     />
 
                     {/* Dashboard Content */}

@@ -1,6 +1,8 @@
 'use client';
 
 import { Zap, LayoutDashboard, Map, Building2, PlugZap, Activity, DollarSign, BatteryCharging, FileBarChart, Wrench, AlertTriangle, Users, Settings, LogOut, X } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
 
 interface SidebarProps {
     currentRole: string;
@@ -12,6 +14,14 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ currentRole, onRoleChange, onNavigate, currentView, onClose, isOpen }: SidebarProps) {
+    const router = useRouter();
+
+    const handleLogout = async () => {
+        const supabase = createClient();
+        await supabase.auth.signOut();
+        router.push('/login');
+    };
+
     const roleLabels: Record<string, string> = {
         'operator': 'Operator',
         'owner': 'Owner / Finance',
@@ -136,7 +146,7 @@ export default function Sidebar({ currentRole, onRoleChange, onNavigate, current
                         <p className="text-sm font-medium truncate">John Doe</p>
                         <p className="text-xs text-neutral-400 truncate">{roleLabels[currentRole]}</p>
                     </div>
-                    <button className="p-2 hover:bg-neutral-800 rounded-lg">
+                    <button onClick={handleLogout} className="p-2 hover:bg-neutral-800 rounded-lg" title="Sign out">
                         <LogOut className="w-4 h-4 text-neutral-400" />
                     </button>
                 </div>

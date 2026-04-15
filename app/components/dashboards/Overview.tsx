@@ -21,7 +21,11 @@ interface OverviewStats {
     stationsTotal: number
 }
 
-export default function Overview() {
+interface OverviewProps {
+    onNavigate?: (view: string) => void;
+}
+
+export default function Overview({ onNavigate }: OverviewProps) {
     const [selectedStation, setSelectedStation] = useState<Station | null>(null);
     const [stats, setStats] = useState<OverviewStats | null>(null);
 
@@ -45,7 +49,7 @@ export default function Overview() {
                         <p className="text-xs sm:text-sm text-warning-600 truncate">Station Milwaukee-01: Charger #1203 offline</p>
                     </div>
                 </div>
-                <button className="w-full sm:w-auto px-4 py-2 bg-warning-500 text-white rounded-lg text-sm font-medium hover:bg-warning-600 tap-target">
+                <button onClick={() => onNavigate?.('chargers')} className="w-full sm:w-auto px-4 py-2 bg-warning-500 text-white rounded-lg text-sm font-medium hover:bg-warning-600 tap-target">
                     View Details
                 </button>
             </div>
@@ -188,7 +192,7 @@ export default function Overview() {
                             <h3 className="font-semibold">Live Sessions</h3>
                             <p className="text-sm text-neutral-500">Currently charging</p>
                         </div>
-                        <button className="text-brand-500 text-sm font-medium hover:text-brand-600">View All</button>
+                        <button onClick={() => onNavigate?.('sessions')} className="text-brand-500 text-sm font-medium hover:text-brand-600">View All</button>
                     </div>
                     <div className="divide-y divide-neutral-100 max-h-96 overflow-y-auto">
                         {activeSessions.length === 0 && (
@@ -264,7 +268,7 @@ export default function Overview() {
                             <h3 className="font-semibold">Top Performing Stations</h3>
                             <p className="text-sm text-neutral-500">By sessions this week</p>
                         </div>
-                        <button className="text-brand-500 text-sm font-medium hover:text-brand-600">View All</button>
+                        <button onClick={() => onNavigate?.('stations')} className="text-brand-500 text-sm font-medium hover:text-brand-600">View All</button>
                     </div>
                     <PerformanceBarChart
                         data={[
